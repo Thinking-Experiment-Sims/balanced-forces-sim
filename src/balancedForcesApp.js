@@ -85,34 +85,33 @@
         trialsTableBody: document.getElementById('trialsTableBody')
       };
 
-      // State
+      // State (Normalized Coordinates for Resolution Independence)
       this.state = {
         activeScenario: 'symmetric',
         workflowStep: 'measure',
         massKg: 0.500,
         g: 9.80,
 
-        // Geometry in virtual canvas space [0..900, 0..520]
-        s1: { x: 160, y: 120 },
-        s2: { x: 740, y: 120 },
-        p: { x: 450, y: 310 },
+        // Normalized knot position [0..1, 0..1] relative to apparatus canvas
+        normKnotX: 0.50,
+        normKnotY: 0.58,
 
-        // Interactive Protractor
+        // Protractor Tool
         protractor: {
           visible: true,
-          x: 450,
-          y: 310,
+          normX: 0.50,
+          normY: 0.58,
           rotationDeg: 0,
-          radius: 120,
+          radius: 110,
           isSnapped: true
         },
 
-        // Interactive Ruler
+        // Ruler Tool
         ruler: {
           visible: false,
-          x: 280,
-          y: 390,
-          length: 260,
+          normX: 0.32,
+          normY: 0.75,
+          length: 220,
           rotationDeg: 0
         },
 
@@ -146,7 +145,7 @@
     init() {
       this.bindEvents();
       this.setScenario('symmetric');
-      
+
       const handleResize = () => {
         this.resizeCanvases();
         this.updateEquilibrium();
@@ -155,7 +154,7 @@
 
       window.addEventListener('resize', handleResize);
       setTimeout(handleResize, 50);
-      setTimeout(handleResize, 300);
+      setTimeout(handleResize, 200);
 
       this.resizeCanvases();
       this.updateEquilibrium();
@@ -173,8 +172,8 @@
         if (!canvas) return;
         const rect = canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
-        const w = rect.width > 0 ? rect.width : (canvas.clientWidth || 800);
-        const h = rect.height > 0 ? rect.height : (canvas.clientHeight || 450);
+        const w = rect.width > 0 ? rect.width : (canvas.clientWidth || 600);
+        const h = rect.height > 0 ? rect.height : (canvas.clientHeight || 360);
         
         canvas.width = Math.floor(w * dpr);
         canvas.height = Math.floor(h * dpr);
@@ -188,13 +187,28 @@
       return this.state.massKg;
     }
 
+    getApparatusCoords() {
+      const canvas = this.dom.apparatusCanvas;
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas ? canvas.width / dpr : 600;
+      const h = canvas ? canvas.height / dpr : 380;
+
+      const s1 = { x: w * 0.18, y: h * 0.24 };
+      const s2 = { x: w * 0.82, y: h * 0.24 };
+      const p = { x: w * this.state.normKnotX, y: h * this.state.normKnotY };
+
+      return { w, h, s1, s2, p, dpr };
+    }
+
     updateEquilibrium() {
+      const { s1, s2, p } = this.getApparatusCoords();
       const massKg = this.getActiveMassKg();
+
       this.equilibrium = BalancedForcesPhysics.calculateStaticEquilibrium(
         massKg,
-        this.state.p,
-        this.state.s1,
-        this.state.s2,
+        p,
+        s1,
+        s2,
         this.state.g
       );
 
@@ -220,10 +234,10 @@
       }
 
       if (this.dom.valKnotX) {
-        this.dom.valKnotX.textContent = `${Math.round(this.state.p.x)} px`;
+        this.dom.valKnotX.textContent = `${Math.round(this.state.normKnotX * 100)}%`;
       }
       if (this.dom.valKnotY) {
-        this.dom.valKnotY.textContent = `${Math.round(this.state.p.y)} px`;
+        this.dom.valKnotY.textContent = `${Math.round(this.state.normKnotY * 100)}%`;
       }
     }
 
@@ -283,12 +297,15 @@
         });
       });
 
-      // Knot X & Y Sliders
+      // Knot X & Y Sliders (Percentages)
       if (this.dom.sliderKnotX) {
+        this.dom.sliderKnotX.min = 28;
+        this.dom.sliderKnotX.max = 72;
+        this.dom.sliderKnotX.value = Math.round(this.state.normKnotX * 100);
         this.dom.sliderKnotX.addEventListener('input', (e) => {
-          this.state.p.x = parseFloat(e.target.value);
+          this.state.normKnotX = parseFloat(e.target.value) / 100;
           if (this.state.protractor.isSnapped) {
-            this.state.protractor.x = this.state.p.x;
+            this.state.protractor.normX = this.state.normKnotX;
           }
           this.updateEquilibrium();
           this.render();
@@ -296,10 +313,13 @@
       }
 
       if (this.dom.sliderKnotY) {
+        this.dom.sliderKnotY.min = 38;
+        this.dom.sliderKnotY.max = 76;
+        this.dom.sliderKnotY.value = Math.round(this.state.normKnotY * 100);
         this.dom.sliderKnotY.addEventListener('input', (e) => {
-          this.state.p.y = parseFloat(e.target.value);
+          this.state.normKnotY = parseFloat(e.target.value) / 100;
           if (this.state.protractor.isSnapped) {
-            this.state.protractor.y = this.state.p.y;
+            this.state.protractor.normY = this.state.normKnotY;
           }
           this.updateEquilibrium();
           this.render();
@@ -336,8 +356,8 @@
       const btnSnap = document.getElementById('btnSnapProtractor');
       if (btnSnap) {
         btnSnap.addEventListener('click', () => {
-          this.state.protractor.x = this.state.p.x;
-          this.state.protractor.y = this.state.p.y;
+          this.state.protractor.normX = this.state.normKnotX;
+          this.state.protractor.normY = this.state.normKnotY;
           this.state.protractor.rotationDeg = 0;
           this.state.protractor.isSnapped = true;
           this.render();
@@ -452,7 +472,8 @@
         this.dom.bannerTitle.textContent = '1. Symmetric Balanced Forces';
         this.dom.bannerDesc.textContent = 'A 500 g load is suspended centrally between two ring stands. Equal angles produce equal cord tensions.';
         this.state.massKg = 0.500;
-        this.state.p = { x: 450, y: 310 };
+        this.state.normKnotX = 0.50;
+        this.state.normKnotY = 0.58;
         if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
         this.state.showAngles = true;
@@ -460,14 +481,16 @@
         this.dom.bannerTitle.textContent = '2. Asymmetric Angles & Tensions';
         this.dom.bannerDesc.textContent = 'The knot is shifted horizontally toward the left stand. The steeper cord carries more vertical load.';
         this.state.massKg = 0.600;
-        this.state.p = { x: 340, y: 310 };
+        this.state.normKnotX = 0.38;
+        this.state.normKnotY = 0.58;
         if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
         this.state.showAngles = true;
       } else if (scenarioId === 'mystery') {
         this.dom.bannerTitle.textContent = '3. Mystery Mass Challenge';
         this.dom.bannerDesc.textContent = 'The hanging mass is unknown. Measure cord tensions and angles with the protractor to determine the load.';
-        this.state.p = { x: 410, y: 320 };
+        this.state.normKnotX = 0.44;
+        this.state.normKnotY = 0.60;
         if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'block';
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'none';
         this.state.showAngles = false;
@@ -481,11 +504,11 @@
       }
 
       if (this.dom.sliderMass) this.dom.sliderMass.value = Math.round(this.state.massKg * 1000);
-      if (this.dom.sliderKnotX) this.dom.sliderKnotX.value = this.state.p.x;
-      if (this.dom.sliderKnotY) this.dom.sliderKnotY.value = this.state.p.y;
+      if (this.dom.sliderKnotX) this.dom.sliderKnotX.value = Math.round(this.state.normKnotX * 100);
+      if (this.dom.sliderKnotY) this.dom.sliderKnotY.value = Math.round(this.state.normKnotY * 100);
 
-      this.state.protractor.x = this.state.p.x;
-      this.state.protractor.y = this.state.p.y;
+      this.state.protractor.normX = this.state.normKnotX;
+      this.state.protractor.normY = this.state.normKnotY;
       this.state.protractor.rotationDeg = 0;
       this.state.protractor.isSnapped = true;
 
@@ -677,64 +700,65 @@
       const canvas = this.dom.apparatusCanvas;
       if (!canvas) return;
 
-      const getCanvasPos = (e) => {
+      const getMousePos = (e) => {
         const rect = canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
-        const w = rect.width;
-        const h = rect.height;
-        const scale = Math.min(w / 900, h / 520);
-        const offsetX = (w - 900 * scale) / 2;
-        const offsetY = (h - 520 * scale) / 2;
+        const w = canvas.width / dpr;
+        const h = canvas.height / dpr;
 
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-        const mouseCanvasX = clientX - rect.left;
-        const mouseCanvasY = clientY - rect.top;
+        const x = ((clientX - rect.left) / rect.width) * w;
+        const y = ((clientY - rect.top) / rect.height) * h;
 
-        return {
-          x: (mouseCanvasX - offsetX) / scale,
-          y: (mouseCanvasY - offsetY) / scale
-        };
+        return { x, y, w, h };
       };
 
       const handleDown = (e) => {
-        const pos = getCanvasPos(e);
+        const { x, y, w, h } = getMousePos(e);
+        const knotX = w * this.state.normKnotX;
+        const knotY = h * this.state.normKnotY;
 
+        // Check Protractor Rotation Handle
         if (this.state.protractor.visible) {
-          const prot = this.state.protractor;
-          const rad = (prot.rotationDeg * Math.PI) / 180;
-          const rotHandleX = prot.x + (prot.radius + 18) * Math.cos(rad);
-          const rotHandleY = prot.y + (prot.radius + 18) * Math.sin(rad);
-          if (Math.hypot(pos.x - rotHandleX, pos.y - rotHandleY) < 20) {
+          const protX = w * this.state.protractor.normX;
+          const protY = h * this.state.protractor.normY;
+          const rad = (this.state.protractor.rotationDeg * Math.PI) / 180;
+          const rotX = protX + (this.state.protractor.radius + 18) * Math.cos(rad);
+          const rotY = protY + (this.state.protractor.radius + 18) * Math.sin(rad);
+
+          if (Math.hypot(x - rotX, y - rotY) < 22) {
             this.state.dragTarget = 'protractor_rot';
             e.preventDefault();
             return;
           }
 
-          const distToProt = Math.hypot(pos.x - prot.x, pos.y - prot.y);
-          if (distToProt <= prot.radius) {
+          if (Math.hypot(x - protX, y - protY) <= this.state.protractor.radius) {
             this.state.dragTarget = 'protractor';
-            this.state.dragOffset = { x: pos.x - prot.x, y: pos.y - prot.y };
+            this.state.dragOffset = { x: x - protX, y: y - protY };
             this.state.protractor.isSnapped = false;
             e.preventDefault();
             return;
           }
         }
 
-        const distToKnot = Math.hypot(pos.x - this.state.p.x, pos.y - this.state.p.y);
-        if (distToKnot < 26) {
+        // Check Knot
+        if (Math.hypot(x - knotX, y - knotY) < 28) {
           this.state.dragTarget = 'knot';
-          this.state.dragOffset = { x: pos.x - this.state.p.x, y: pos.y - this.state.p.y };
+          this.state.dragOffset = { x: x - knotX, y: y - knotY };
           e.preventDefault();
           return;
         }
 
+        // Check Ruler
         if (this.state.ruler.visible) {
-          const r = this.state.ruler;
-          if (pos.x >= r.x && pos.x <= r.x + r.length && pos.y >= r.y - 20 && pos.y <= r.y + 40) {
+          const rx = w * this.state.ruler.normX;
+          const ry = h * this.state.ruler.normY;
+          const rlen = this.state.ruler.length;
+          if (x >= rx && x <= rx + rlen && y >= ry - 20 && y <= ry + 40) {
             this.state.dragTarget = 'ruler';
-            this.state.dragOffset = { x: pos.x - r.x, y: pos.y - r.y };
+            this.state.dragOffset = { x: x - rx, y: y - ry };
             e.preventDefault();
             return;
           }
@@ -742,11 +766,13 @@
       };
 
       const handleMove = (e) => {
-        const pos = getCanvasPos(e);
+        const { x, y, w, h } = getMousePos(e);
+        const knotX = w * this.state.normKnotX;
+        const knotY = h * this.state.normKnotY;
 
         if (!this.state.dragTarget) {
-          const distToKnot = Math.hypot(pos.x - this.state.p.x, pos.y - this.state.p.y);
-          this.state.isHoveringKnot = distToKnot < 26;
+          const distToKnot = Math.hypot(x - knotX, y - knotY);
+          this.state.isHoveringKnot = distToKnot < 28;
           canvas.style.cursor = this.state.isHoveringKnot ? 'grab' : 'crosshair';
           return;
         }
@@ -754,43 +780,47 @@
         canvas.style.cursor = 'grabbing';
 
         if (this.state.dragTarget === 'knot') {
-          const newX = Math.max(220, Math.min(680, pos.x - this.state.dragOffset.x));
-          const newY = Math.max(180, Math.min(430, pos.y - this.state.dragOffset.y));
-          
-          this.state.p.x = newX;
-          this.state.p.y = newY;
+          const newX = Math.max(w * 0.28, Math.min(w * 0.72, x - this.state.dragOffset.x));
+          const newY = Math.max(h * 0.38, Math.min(h * 0.76, y - this.state.dragOffset.y));
 
-          if (this.dom.sliderKnotX) this.dom.sliderKnotX.value = newX;
-          if (this.dom.sliderKnotY) this.dom.sliderKnotY.value = newY;
+          this.state.normKnotX = newX / w;
+          this.state.normKnotY = newY / h;
+
+          if (this.dom.sliderKnotX) this.dom.sliderKnotX.value = Math.round(this.state.normKnotX * 100);
+          if (this.dom.sliderKnotY) this.dom.sliderKnotY.value = Math.round(this.state.normKnotY * 100);
 
           if (this.state.protractor.isSnapped) {
-            this.state.protractor.x = newX;
-            this.state.protractor.y = newY;
+            this.state.protractor.normX = this.state.normKnotX;
+            this.state.protractor.normY = this.state.normKnotY;
           }
 
           this.updateEquilibrium();
           this.render();
         } else if (this.state.dragTarget === 'protractor') {
-          this.state.protractor.x = pos.x - this.state.dragOffset.x;
-          this.state.protractor.y = pos.y - this.state.dragOffset.y;
+          const newX = x - this.state.dragOffset.x;
+          const newY = y - this.state.dragOffset.y;
 
-          if (Math.hypot(this.state.protractor.x - this.state.p.x, this.state.protractor.y - this.state.p.y) < 16) {
-            this.state.protractor.x = this.state.p.x;
-            this.state.protractor.y = this.state.p.y;
+          this.state.protractor.normX = newX / w;
+          this.state.protractor.normY = newY / h;
+
+          if (Math.hypot(newX - knotX, newY - knotY) < 18) {
+            this.state.protractor.normX = this.state.normKnotX;
+            this.state.protractor.normY = this.state.normKnotY;
             this.state.protractor.isSnapped = true;
           }
 
           this.render();
         } else if (this.state.dragTarget === 'protractor_rot') {
-          const prot = this.state.protractor;
-          const rad = Math.atan2(pos.y - prot.y, pos.x - prot.x);
+          const protX = w * this.state.protractor.normX;
+          const protY = h * this.state.protractor.normY;
+          const rad = Math.atan2(y - protY, x - protX);
           let deg = (rad * 180) / Math.PI;
           if (deg < 0) deg += 360;
-          prot.rotationDeg = Math.round(deg);
+          this.state.protractor.rotationDeg = Math.round(deg);
           this.render();
         } else if (this.state.dragTarget === 'ruler') {
-          this.state.ruler.x = pos.x - this.state.dragOffset.x;
-          this.state.ruler.y = pos.y - this.state.dragOffset.y;
+          this.state.ruler.normX = (x - this.state.dragOffset.x) / w;
+          this.state.ruler.normY = (y - this.state.dragOffset.y) / h;
           this.render();
         }
       };
@@ -818,472 +848,506 @@
       const canvas = this.dom.apparatusCanvas;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width > 0 ? rect.width : (canvas.clientWidth || 800);
-      const h = rect.height > 0 ? rect.height : (canvas.clientHeight || 450);
+      const { w, h, s1, s2, p, dpr } = this.getApparatusCoords();
+
+      if (w < 10 || h < 10) return;
 
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
 
-      const scale = Math.min(w / 900, h / 520);
-      const offsetX = (w - 900 * scale) / 2;
-      const offsetY = (h - 520 * scale) / 2;
+      // 1. Grid & Table
+      this.drawApparatusBackground(ctx, w, h);
 
-      ctx.translate(offsetX, offsetY);
-      ctx.scale(scale, scale);
+      // 2. Ring Stands
+      this.drawRingStands(ctx, w, h, s1, s2);
 
-      this.drawLabGrid(ctx);
-      this.drawRingStands(ctx);
-
+      // 3. Level Lines
       if (this.state.showLevelLines) {
-        this.drawLevelLines(ctx);
+        this.drawLevelLines(ctx, w, h, s1, s2, p);
       }
 
-      this.drawSpringScales(ctx);
-      this.drawCordsAndKnot(ctx);
-      this.drawHangingMass(ctx);
+      // 4. Spring Scales
+      this.drawSpringScales(ctx, s1, s2, p);
 
+      // 5. Cords & Knot
+      this.drawCordsAndKnot(ctx, s1, s2, p);
+
+      // 6. Hanging Mass
+      this.drawHangingMass(ctx, p);
+
+      // 7. Force Vectors
       if (this.state.showVectors) {
-        this.drawForceVectors(ctx);
+        this.drawForceVectors(ctx, p);
       }
 
+      // 8. Angle Visualizers
       if (this.state.showAngles) {
-        this.drawAngleVisualizers(ctx);
+        this.drawAngleVisualizers(ctx, p);
       }
 
+      // 9. Interactive Protractor
       if (this.state.protractor.visible) {
-        this.drawProtractor(ctx);
+        const protX = w * this.state.protractor.normX;
+        const protY = h * this.state.protractor.normY;
+        this.drawProtractor(ctx, protX, protY);
       }
 
+      // 10. Ruler
       if (this.state.ruler.visible) {
-        this.drawRuler(ctx);
+        const rx = w * this.state.ruler.normX;
+        const ry = h * this.state.ruler.normY;
+        this.drawRuler(ctx, rx, ry);
       }
 
       ctx.restore();
     }
 
-    drawLabGrid(ctx) {
+    drawApparatusBackground(ctx, w, h) {
       ctx.save();
-      ctx.strokeStyle = '#e2edf2';
+      ctx.strokeStyle = '#e6f0f5';
       ctx.lineWidth = 1;
-      for (let x = 0; x <= 900; x += 30) {
+      const step = Math.max(24, Math.floor(w / 28));
+
+      for (let x = 0; x <= w; x += step) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
-        ctx.lineTo(x, 520);
+        ctx.lineTo(x, h);
         ctx.stroke();
       }
-      for (let y = 0; y <= 520; y += 30) {
+      for (let y = 0; y <= h; y += step) {
         ctx.beginPath();
         ctx.moveTo(0, y);
-        ctx.lineTo(900, y);
+        ctx.lineTo(w, y);
         ctx.stroke();
       }
 
+      // Tabletop Base
+      const tableY = h * 0.88;
       ctx.fillStyle = '#f1f5f9';
-      ctx.fillRect(0, 480, 900, 40);
+      ctx.fillRect(0, tableY, w, h - tableY);
       ctx.strokeStyle = '#cbd5e1';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(0, 480);
-      ctx.lineTo(900, 480);
+      ctx.moveTo(0, tableY);
+      ctx.lineTo(w, tableY);
       ctx.stroke();
       ctx.restore();
     }
 
-    drawRingStands(ctx) {
+    drawRingStands(ctx, w, h, s1, s2) {
       ctx.save();
-      const drawStand = (baseX, clampY) => {
+      const tableY = h * 0.88;
+      const rodTopY = h * 0.12;
+
+      const drawStand = (standX, clampY, isLeft) => {
+        // Steel Base
         ctx.fillStyle = '#475569';
-        drawRoundedRect(ctx, baseX - 45, 465, 90, 15, 3, true, true);
+        drawRoundedRect(ctx, standX - 35, tableY - 12, 70, 12, 3, true, true);
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        const grad = ctx.createLinearGradient(baseX - 5, 0, baseX + 5, 0);
+        // Vertical Steel Rod
+        const grad = ctx.createLinearGradient(standX - 4, 0, standX + 4, 0);
         grad.addColorStop(0, '#cbd5e1');
         grad.addColorStop(0.5, '#ffffff');
         grad.addColorStop(1, '#94a3b8');
         ctx.fillStyle = grad;
-        ctx.fillRect(baseX - 5, 60, 10, 405);
-        ctx.strokeRect(baseX - 5, 60, 10, 405);
+        ctx.fillRect(standX - 4, rodTopY, 8, tableY - rodTopY - 12);
+        ctx.strokeRect(standX - 4, rodTopY, 8, tableY - rodTopY - 12);
 
+        // Rod Cap
         ctx.fillStyle = '#334155';
         ctx.beginPath();
-        ctx.arc(baseX, 60, 6, 0, Math.PI * 2);
+        ctx.arc(standX, rodTopY, 5, 0, Math.PI * 2);
         ctx.fill();
 
+        // Clamp
         ctx.fillStyle = '#0f7e9b';
-        drawRoundedRect(ctx, baseX - 12, clampY - 10, 24, 20, 3, true, true);
+        drawRoundedRect(ctx, standX - 10, clampY - 9, 20, 18, 3, true, true);
         ctx.strokeStyle = '#0a576b';
         ctx.stroke();
 
+        // Knob
         ctx.fillStyle = '#d67b19';
         ctx.beginPath();
-        ctx.arc(baseX + (baseX < 450 ? -14 : 14), clampY, 5, 0, Math.PI * 2);
+        ctx.arc(standX + (isLeft ? -12 : 12), clampY, 4.5, 0, Math.PI * 2);
         ctx.fill();
       };
 
-      drawStand(this.state.s1.x - 30, this.state.s1.y);
-      drawStand(this.state.s2.x + 30, this.state.s2.y);
+      const stand1X = s1.x - 24;
+      const stand2X = s2.x + 24;
 
+      drawStand(stand1X, s1.y, true);
+      drawStand(stand2X, s2.y, false);
+
+      // Support Arms
       ctx.strokeStyle = '#64748b';
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 5;
       ctx.lineCap = 'round';
       
       ctx.beginPath();
-      ctx.moveTo(this.state.s1.x - 30, this.state.s1.y);
-      ctx.lineTo(this.state.s1.x, this.state.s1.y);
+      ctx.moveTo(stand1X, s1.y);
+      ctx.lineTo(s1.x, s1.y);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(this.state.s2.x + 30, this.state.s2.y);
-      ctx.lineTo(this.state.s2.x, this.state.s2.y);
+      ctx.moveTo(stand2X, s2.y);
+      ctx.lineTo(s2.x, s2.y);
       ctx.stroke();
 
       ctx.restore();
     }
 
-    drawLevelLines(ctx) {
+    drawLevelLines(ctx, w, h, s1, s2, p) {
       ctx.save();
-      ctx.strokeStyle = 'rgba(15, 126, 155, 0.4)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = 'rgba(15, 126, 155, 0.35)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([4, 4]);
 
+      // Horizontal line through knot
       ctx.beginPath();
-      ctx.moveTo(50, this.state.p.y);
-      ctx.lineTo(850, this.state.p.y);
+      ctx.moveTo(w * 0.05, p.y);
+      ctx.lineTo(w * 0.95, p.y);
       ctx.stroke();
 
+      // Horizontal line through clamps
       ctx.beginPath();
-      ctx.moveTo(this.state.s1.x - 20, this.state.s1.y);
-      ctx.lineTo(this.state.s2.x + 20, this.state.s2.y);
+      ctx.moveTo(s1.x - 15, s1.y);
+      ctx.lineTo(s2.x + 15, s2.y);
       ctx.stroke();
 
+      // Plumb line
       ctx.beginPath();
-      ctx.moveTo(this.state.p.x, this.state.p.y - 40);
-      ctx.lineTo(this.state.p.x, this.state.p.y + 110);
+      ctx.moveTo(p.x, p.y - 30);
+      ctx.lineTo(p.x, p.y + 90);
       ctx.stroke();
 
       ctx.restore();
     }
 
-    drawSpringScales(ctx) {
+    drawSpringScales(ctx, s1, s2, p) {
       const eq = this.equilibrium;
       if (!eq) return;
 
-      const drawScale = (anchor, tension, angleRad, isLeft) => {
+      const drawScale = (anchor, tension, targetPoint, isLeft) => {
+        const dx = targetPoint.x - anchor.x;
+        const dy = targetPoint.y - anchor.y;
+        const angleRad = Math.atan2(dy, dx);
+
         ctx.save();
         ctx.translate(anchor.x, anchor.y);
-        ctx.rotate(angleRad + (isLeft ? Math.PI : 0));
+        ctx.rotate(angleRad);
 
+        // Suspension Ring
         ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2.2;
         ctx.beginPath();
-        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.arc(0, 0, 7, 0, Math.PI * 2);
         ctx.stroke();
 
-        const scaleLen = 70;
-        const barrelW = 20;
+        // Housing
+        const scaleLen = 65;
+        const barrelW = 18;
 
-        ctx.fillStyle = 'rgba(240, 248, 250, 0.9)';
-        drawRoundedRect(ctx, 8, -barrelW / 2, scaleLen, barrelW, 4, true, true);
+        ctx.fillStyle = 'rgba(240, 248, 250, 0.92)';
+        drawRoundedRect(ctx, 7, -barrelW / 2, scaleLen, barrelW, 3, true, true);
         ctx.strokeStyle = '#0f7e9b';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1.4;
         ctx.stroke();
 
+        // Caps
         ctx.fillStyle = '#0f7e9b';
-        drawRoundedRect(ctx, 8, -barrelW / 2, 8, barrelW, 2, true, false);
-        drawRoundedRect(ctx, 8 + scaleLen - 8, -barrelW / 2, 8, barrelW, 2, true, false);
+        drawRoundedRect(ctx, 7, -barrelW / 2, 7, barrelW, 2, true, false);
+        drawRoundedRect(ctx, 7 + scaleLen - 7, -barrelW / 2, 7, barrelW, 2, true, false);
 
+        // Newton Ticks
         ctx.fillStyle = '#0a576b';
         ctx.font = '7px Inter, sans-serif';
         ctx.textAlign = 'center';
         for (let n = 0; n <= 10; n += 2) {
-          const tickX = 18 + (n / 10) * (scaleLen - 28);
+          const tickX = 16 + (n / 10) * (scaleLen - 25);
           ctx.beginPath();
           ctx.moveTo(tickX, -barrelW / 2 + 2);
-          ctx.lineTo(tickX, -barrelW / 2 + 6);
+          ctx.lineTo(tickX, -barrelW / 2 + 5);
           ctx.stroke();
-          ctx.fillText(n.toString(), tickX, 7);
+          ctx.fillText(n.toString(), tickX, 6);
         }
 
-        const maxExtension = scaleLen - 28;
+        // Spring Deflection
+        const maxExtension = scaleLen - 25;
         const extension = Math.min(maxExtension, (tension / 10) * maxExtension);
-        const indicatorX = 18 + extension;
+        const indicatorX = 16 + extension;
 
         ctx.strokeStyle = '#64748b';
         ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(18, 0);
-        const coils = 8;
+        ctx.moveTo(16, 0);
+        const coils = 7;
         for (let i = 0; i <= coils; i++) {
-          const cx = 18 + (i / coils) * extension;
-          const cy = (i % 2 === 0 ? -3 : 3);
+          const cx = 16 + (i / coils) * extension;
+          const cy = (i % 2 === 0 ? -2.5 : 2.5);
           ctx.lineTo(cx, cy);
         }
         ctx.lineTo(indicatorX, 0);
         ctx.stroke();
 
+        // Red Indicator
         ctx.fillStyle = '#dc2626';
-        ctx.fillRect(indicatorX - 1.5, -barrelW / 2 + 2, 3, barrelW - 4);
+        ctx.fillRect(indicatorX - 1.2, -barrelW / 2 + 2, 2.4, barrelW - 4);
 
+        // Hook Rod
         ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2.2;
         ctx.beginPath();
         ctx.moveTo(indicatorX, 0);
-        ctx.lineTo(8 + scaleLen + 10, 0);
+        ctx.lineTo(7 + scaleLen + 8, 0);
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(8 + scaleLen + 14, 4, 4, -Math.PI / 2, Math.PI / 2);
+        ctx.arc(7 + scaleLen + 11, 3.5, 3.5, -Math.PI / 2, Math.PI / 2);
         ctx.stroke();
 
+        // Digital Force Badge
         if (this.state.showSpringDials) {
           ctx.save();
-          ctx.rotate(-(angleRad + (isLeft ? Math.PI : 0)));
+          ctx.rotate(-angleRad); // Keep text horizontal
           ctx.fillStyle = '#ffffff';
-          drawRoundedRect(ctx, -26, isLeft ? -45 : 25, 52, 22, 4, true, true);
+          drawRoundedRect(ctx, -24, isLeft ? -38 : 22, 48, 20, 4, true, true);
           ctx.strokeStyle = '#0f7e9b';
-          ctx.lineWidth = 1.5;
+          ctx.lineWidth = 1.4;
           ctx.stroke();
 
           ctx.fillStyle = '#0f7e9b';
-          ctx.font = 'bold 10px Inter, sans-serif';
+          ctx.font = 'bold 9.5px Inter, sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(`${tension.toFixed(2)} N`, 0, isLeft ? -30 : 40);
+          ctx.fillText(`${tension.toFixed(2)} N`, 0, isLeft ? -25 : 35);
           ctx.restore();
         }
 
         ctx.restore();
       };
 
-      const angleLeft = Math.atan2(this.state.p.y - this.state.s1.y, this.state.p.x - this.state.s1.x);
-      drawScale(this.state.s1, eq.t1, angleLeft, false);
-
-      const angleRight = Math.atan2(this.state.p.y - this.state.s2.y, this.state.p.x - this.state.s2.x);
-      drawScale(this.state.s2, eq.t2, angleRight, false);
+      drawScale(s1, eq.t1, p, true);
+      drawScale(s2, eq.t2, p, false);
     }
 
-    drawCordsAndKnot(ctx) {
+    drawCordsAndKnot(ctx, s1, s2, p) {
       ctx.save();
       ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2.4;
       ctx.lineCap = 'round';
 
+      // Left Cord
       ctx.beginPath();
-      ctx.moveTo(this.state.s1.x, this.state.s1.y);
-      ctx.lineTo(this.state.p.x, this.state.p.y);
+      ctx.moveTo(s1.x, s1.y);
+      ctx.lineTo(p.x, p.y);
       ctx.stroke();
 
+      // Right Cord
       ctx.beginPath();
-      ctx.moveTo(this.state.s2.x, this.state.s2.y);
-      ctx.lineTo(this.state.p.x, this.state.p.y);
+      ctx.moveTo(s2.x, s2.y);
+      ctx.lineTo(p.x, p.y);
       ctx.stroke();
 
+      // Vertical Cord
       ctx.beginPath();
-      ctx.moveTo(this.state.p.x, this.state.p.y);
-      ctx.lineTo(this.state.p.x, this.state.p.y + 40);
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x, p.y + 35);
       ctx.stroke();
 
-      const ringX = this.state.p.x;
-      const ringY = this.state.p.y;
-
+      // Knot Ring
       if (this.state.isHoveringKnot || this.state.dragTarget === 'knot') {
         ctx.fillStyle = 'rgba(214, 123, 25, 0.3)';
         ctx.beginPath();
-        ctx.arc(ringX, ringY, 18, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 16, 0, Math.PI * 2);
         ctx.fill();
       }
 
       ctx.fillStyle = '#d67b19';
       ctx.beginPath();
-      ctx.arc(ringX, ringY, 8, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 7.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#b86510';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.8;
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(ringX, ringY, 4, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
     }
 
-    drawHangingMass(ctx) {
-      const kX = this.state.p.x;
-      const topY = this.state.p.y + 40;
+    drawHangingMass(ctx, p) {
+      const topY = p.y + 35;
       const massKg = this.getActiveMassKg();
 
       ctx.save();
 
       if (this.state.activeScenario === 'mystery') {
-        const boxW = 54;
-        const boxH = 65;
-        const boxX = kX - boxW / 2;
-        const boxY = topY + 8;
+        const boxW = 50;
+        const boxH = 58;
+        const boxX = p.x - boxW / 2;
+        const boxY = topY + 6;
 
         ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.arc(kX, topY + 4, 5, -Math.PI / 2, Math.PI / 2);
+        ctx.arc(p.x, topY + 3, 4.5, -Math.PI / 2, Math.PI / 2);
         ctx.stroke();
 
         ctx.fillStyle = '#d67b19';
-        drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 6, true, true);
+        drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 5, true, true);
         ctx.strokeStyle = '#b86510';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1.8;
         ctx.stroke();
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 26px Inter, sans-serif';
+        ctx.font = 'bold 22px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('?', kX, boxY + boxH / 2 - 4);
+        ctx.fillText('?', p.x, boxY + boxH / 2 - 3);
 
-        ctx.font = 'bold 11px Inter, sans-serif';
-        ctx.fillText(`MASS ${this.state.currentMystery}`, kX, boxY + boxH - 12);
+        ctx.font = 'bold 9.5px Inter, sans-serif';
+        ctx.fillText(`MASS ${this.state.currentMystery}`, p.x, boxY + boxH - 10);
       } else {
-        const hangerW = 44;
-        const discH = 10;
+        const hangerW = 40;
+        const discH = 9;
         const massG = Math.round(massKg * 1000);
 
         ctx.strokeStyle = '#64748b';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.arc(kX, topY + 4, 4, 0, Math.PI * 2);
-        ctx.moveTo(kX, topY + 8);
-        ctx.lineTo(kX, topY + 70);
+        ctx.arc(p.x, topY + 3, 3.5, 0, Math.PI * 2);
+        ctx.moveTo(p.x, topY + 7);
+        ctx.lineTo(p.x, topY + 60);
         ctx.stroke();
 
         ctx.fillStyle = '#475569';
-        drawRoundedRect(ctx, kX - 22, topY + 68, 44, 6, 2, true, false);
+        drawRoundedRect(ctx, p.x - 20, topY + 58, 40, 5, 2, true, false);
 
         const numDiscs = Math.max(1, Math.min(6, Math.ceil(massG / 150)));
         for (let i = 0; i < numDiscs; i++) {
-          const discY = topY + 68 - (i + 1) * (discH + 1);
-          const grad = ctx.createLinearGradient(kX - hangerW / 2, discY, kX + hangerW / 2, discY);
+          const discY = topY + 58 - (i + 1) * (discH + 1);
+          const grad = ctx.createLinearGradient(p.x - hangerW / 2, discY, p.x + hangerW / 2, discY);
           grad.addColorStop(0, '#d67b19');
           grad.addColorStop(0.5, '#fef5ea');
           grad.addColorStop(1, '#b86510');
           ctx.fillStyle = grad;
-          drawRoundedRect(ctx, kX - hangerW / 2, discY, hangerW, discH, 2, true, true);
+          drawRoundedRect(ctx, p.x - hangerW / 2, discY, hangerW, discH, 2, true, true);
           ctx.strokeStyle = '#8c4805';
           ctx.lineWidth = 1;
           ctx.stroke();
 
           ctx.fillStyle = '#ffffff';
-          ctx.fillRect(kX - 2, discY, 4, discH);
+          ctx.fillRect(p.x - 2, discY, 4, discH);
         }
 
         ctx.fillStyle = '#0f7e9b';
-        drawRoundedRect(ctx, kX - 32, topY + 80, 64, 20, 4, true, false);
+        drawRoundedRect(ctx, p.x - 28, topY + 68, 56, 18, 3, true, false);
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.font = 'bold 10px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`${massG} g`, kX, topY + 90);
+        ctx.fillText(`${massG} g`, p.x, topY + 77);
       }
 
       ctx.restore();
     }
 
-    drawForceVectors(ctx) {
+    drawForceVectors(ctx, p) {
       const eq = this.equilibrium;
       if (!eq) return;
 
       ctx.save();
-      const pX = this.state.p.x;
-      const pY = this.state.p.y;
-      const scale = 20;
+      const scale = 18;
 
-      const t1EndX = pX + eq.t1x * scale;
-      const t1EndY = pY - eq.t1y * scale;
-      drawArrow(ctx, pX, pY, t1EndX, t1EndY, 10, '#0f7e9b', 3.5);
+      const t1EndX = p.x + eq.t1x * scale;
+      const t1EndY = p.y - eq.t1y * scale;
+      drawArrow(ctx, p.x, p.y, t1EndX, t1EndY, 9, '#0f7e9b', 3);
 
-      const t2EndX = pX + eq.t2x * scale;
-      const t2EndY = pY - eq.t2y * scale;
-      drawArrow(ctx, pX, pY, t2EndX, t2EndY, 10, '#d67b19', 3.5);
+      const t2EndX = p.x + eq.t2x * scale;
+      const t2EndY = p.y - eq.t2y * scale;
+      drawArrow(ctx, p.x, p.y, t2EndX, t2EndY, 9, '#d67b19', 3);
 
-      const fgEndY = pY - eq.fgy * scale;
-      drawArrow(ctx, pX, pY, pX, fgEndY, 10, '#dc2626', 3.5);
+      const fgEndY = p.y - eq.fgy * scale;
+      drawArrow(ctx, p.x, p.y, p.x, fgEndY, 9, '#dc2626', 3);
 
       if (this.state.showComponents) {
-        ctx.setLineDash([4, 4]);
-        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1.2;
 
         ctx.strokeStyle = 'rgba(15, 126, 155, 0.6)';
         ctx.beginPath();
         ctx.moveTo(t1EndX, t1EndY);
-        ctx.lineTo(pX, t1EndY);
-        ctx.lineTo(pX, pY);
+        ctx.lineTo(p.x, t1EndY);
+        ctx.lineTo(p.x, p.y);
         ctx.stroke();
 
         ctx.strokeStyle = 'rgba(214, 123, 25, 0.6)';
         ctx.beginPath();
         ctx.moveTo(t2EndX, t2EndY);
-        ctx.lineTo(pX, t2EndY);
-        ctx.lineTo(pX, pY);
+        ctx.lineTo(p.x, t2EndY);
+        ctx.lineTo(p.x, p.y);
         ctx.stroke();
       }
 
       ctx.restore();
     }
 
-    drawAngleVisualizers(ctx) {
+    drawAngleVisualizers(ctx, p) {
       const eq = this.equilibrium;
       if (!eq) return;
 
       ctx.save();
-      const pX = this.state.p.x;
-      const pY = this.state.p.y;
-      const radius = 45;
+      const radius = 40;
 
+      // Angle 1: Sweep from 180° (-x) upwards by theta1
       ctx.strokeStyle = '#0f7e9b';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.8;
       ctx.fillStyle = 'rgba(15, 126, 155, 0.15)';
       ctx.beginPath();
-      ctx.moveTo(pX, pY);
-      ctx.arc(pX, pY, radius, Math.PI, Math.PI + eq.geometry.theta1Rad, false);
+      ctx.moveTo(p.x, p.y);
+      ctx.arc(p.x, p.y, radius, Math.PI, Math.PI - eq.geometry.theta1Rad, true);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#0f7e9b';
-      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.font = 'bold 11px Inter, sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(`θ₁ = ${eq.geometry.theta1Deg.toFixed(1)}°`, pX - radius - 8, pY - 14);
+      ctx.fillText(`θ₁ = ${eq.geometry.theta1Deg.toFixed(1)}°`, p.x - radius - 6, p.y - 12);
 
+      // Angle 2: Sweep from 0° (+x) upwards by theta2
       ctx.strokeStyle = '#d67b19';
       ctx.fillStyle = 'rgba(214, 123, 25, 0.15)';
       ctx.beginPath();
-      ctx.moveTo(pX, pY);
-      ctx.arc(pX, pY, radius, 0, -eq.geometry.theta2Rad, true);
+      ctx.moveTo(p.x, p.y);
+      ctx.arc(p.x, p.y, radius, 0, -eq.geometry.theta2Rad, true);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#d67b19';
       ctx.textAlign = 'left';
-      ctx.fillText(`θ₂ = ${eq.geometry.theta2Deg.toFixed(1)}°`, pX + radius + 8, pY - 14);
+      ctx.fillText(`θ₂ = ${eq.geometry.theta2Deg.toFixed(1)}°`, p.x + radius + 6, p.y - 12);
 
       ctx.restore();
     }
 
-    drawProtractor(ctx) {
-      const prot = this.state.protractor;
+    drawProtractor(ctx, protX, protY) {
       ctx.save();
-      ctx.translate(prot.x, prot.y);
-      ctx.rotate((prot.rotationDeg * Math.PI) / 180);
+      ctx.translate(protX, protY);
+      ctx.rotate((this.state.protractor.rotationDeg * Math.PI) / 180);
 
-      const r = prot.radius;
+      const r = this.state.protractor.radius;
 
-      ctx.fillStyle = 'rgba(224, 242, 247, 0.72)';
+      ctx.fillStyle = 'rgba(224, 242, 247, 0.75)';
       ctx.strokeStyle = '#0f7e9b';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.8;
 
       ctx.beginPath();
       ctx.arc(0, 0, r, Math.PI, 0, false);
@@ -1291,7 +1355,7 @@
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
       ctx.beginPath();
       ctx.arc(0, 0, r * 0.45, Math.PI, 0, false);
       ctx.closePath();
@@ -1299,32 +1363,32 @@
       ctx.stroke();
 
       ctx.strokeStyle = '#d67b19';
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
-      ctx.moveTo(-15, 0);
-      ctx.lineTo(15, 0);
-      ctx.moveTo(0, -15);
-      ctx.lineTo(0, 15);
+      ctx.moveTo(-12, 0);
+      ctx.lineTo(12, 0);
+      ctx.moveTo(0, -12);
+      ctx.lineTo(0, 12);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.arc(0, 0, 5, 0, Math.PI * 2);
+      ctx.arc(0, 0, 4, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.fillStyle = '#0a576b';
       ctx.strokeStyle = '#0f7e9b';
-      ctx.font = '8px Inter, sans-serif';
+      ctx.font = '7.5px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
       for (let deg = 0; deg <= 180; deg += 1) {
         const rad = Math.PI - (deg * Math.PI) / 180;
-        let tickLen = 4;
+        let tickLen = 3.5;
 
         if (deg % 10 === 0) {
-          tickLen = 12;
+          tickLen = 10;
         } else if (deg % 5 === 0) {
-          tickLen = 8;
+          tickLen = 6.5;
         }
 
         const x1 = (r - 2) * Math.cos(rad);
@@ -1332,81 +1396,81 @@
         const x2 = (r - 2 - tickLen) * Math.cos(rad);
         const y2 = -(r - 2 - tickLen) * Math.sin(rad);
 
-        ctx.lineWidth = (deg % 10 === 0) ? 1.4 : 0.7;
+        ctx.lineWidth = (deg % 10 === 0) ? 1.2 : 0.6;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
 
         if (deg % 10 === 0) {
-          const textR = r - 20;
+          const textR = r - 16;
           const tx = textR * Math.cos(rad);
           const ty = -textR * Math.sin(rad);
           ctx.fillText(deg.toString(), tx, ty);
         }
       }
 
-      const rotX = (r + 18);
+      // Rotation Handle
+      const rotX = r + 16;
       const rotY = 0;
       ctx.fillStyle = '#d67b19';
       ctx.beginPath();
-      ctx.arc(rotX, rotY, 8, 0, Math.PI * 2);
+      ctx.arc(rotX, rotY, 7, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.8;
       ctx.stroke();
 
       ctx.fillStyle = '#0f7e9b';
-      drawRoundedRect(ctx, -40, -r - 18, 80, 16, 3, true, false);
+      drawRoundedRect(ctx, -35, -r - 16, 70, 14, 3, true, false);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 9px Inter, sans-serif';
-      ctx.fillText('PROTRACTOR', 0, -r - 10);
+      ctx.font = 'bold 8.5px Inter, sans-serif';
+      ctx.fillText('PROTRACTOR', 0, -r - 9);
 
       ctx.restore();
     }
 
-    drawRuler(ctx) {
-      const ruler = this.state.ruler;
+    drawRuler(ctx, rx, ry) {
       ctx.save();
-      ctx.translate(ruler.x, ruler.y);
-      ctx.rotate((ruler.rotationDeg * Math.PI) / 180);
+      ctx.translate(rx, ry);
+      ctx.rotate((this.state.ruler.rotationDeg * Math.PI) / 180);
 
-      const len = ruler.length;
-      const h = 32;
+      const len = this.state.ruler.length;
+      const h = 28;
 
-      ctx.fillStyle = 'rgba(254, 245, 234, 0.88)';
+      ctx.fillStyle = 'rgba(254, 245, 234, 0.9)';
       drawRoundedRect(ctx, 0, 0, len, h, 3, true, true);
       ctx.strokeStyle = '#d67b19';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.4;
       ctx.stroke();
 
       ctx.fillStyle = '#78350f';
       ctx.strokeStyle = '#b86510';
-      ctx.font = '8px Inter, sans-serif';
+      ctx.font = '7.5px Inter, sans-serif';
       ctx.textAlign = 'center';
 
-      const mmSpacing = 4;
+      const mmSpacing = 3.5;
       const totalCm = Math.floor(len / (mmSpacing * 10));
 
       for (let cm = 0; cm <= totalCm; cm++) {
         const cmX = cm * mmSpacing * 10;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1.4;
         ctx.beginPath();
         ctx.moveTo(cmX, 0);
-        ctx.lineTo(cmX, 12);
+        ctx.lineTo(cmX, 10);
         ctx.stroke();
 
         if (cm > 0) {
-          ctx.fillText(cm.toString(), cmX, 22);
+          ctx.fillText(cm.toString(), cmX, 19);
         }
 
         for (let mm = 1; mm < 10; mm++) {
           const mmX = cmX + mm * mmSpacing;
           if (mmX < len) {
-            ctx.lineWidth = 0.8;
+            ctx.lineWidth = 0.7;
             ctx.beginPath();
             ctx.moveTo(mmX, 0);
-            ctx.lineTo(mmX, mm === 5 ? 8 : 5);
+            ctx.lineTo(mmX, mm === 5 ? 7 : 4);
             ctx.stroke();
           }
         }
@@ -1425,29 +1489,30 @@
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width > 0 ? rect.width : (canvas.clientWidth || 380);
-      const h = rect.height > 0 ? rect.height : (canvas.clientHeight || 240);
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+
+      if (w < 10 || h < 10) return;
 
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
 
       const cX = w / 2;
-      const cY = h / 2 + 18;
+      const cY = h / 2 + 15;
 
       ctx.strokeStyle = '#e2edf2';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(cX, 15);
-      ctx.lineTo(cX, h - 15);
-      ctx.moveTo(15, cY);
-      ctx.lineTo(w - 15, cY);
+      ctx.moveTo(cX, 12);
+      ctx.lineTo(cX, h - 12);
+      ctx.moveTo(12, cY);
+      ctx.lineTo(w - 12, cY);
       ctx.stroke();
 
       ctx.fillStyle = '#0f7e9b';
       ctx.beginPath();
-      ctx.arc(cX, cY, 6, 0, Math.PI * 2);
+      ctx.arc(cX, cY, 5.5, 0, Math.PI * 2);
       ctx.fill();
 
       const eq = this.equilibrium;
@@ -1456,18 +1521,18 @@
         return;
       }
 
-      const scale = 22;
+      const scale = 20;
 
       const t1X = cX + eq.t1x * scale;
       const t1Y = cY - eq.t1y * scale;
-      drawArrow(ctx, cX, cY, t1X, t1Y, 10, '#0f7e9b', 3);
+      drawArrow(ctx, cX, cY, t1X, t1Y, 9, '#0f7e9b', 2.8);
 
       const t2X = cX + eq.t2x * scale;
       const t2Y = cY - eq.t2y * scale;
-      drawArrow(ctx, cX, cY, t2X, t2Y, 10, '#d67b19', 3);
+      drawArrow(ctx, cX, cY, t2X, t2Y, 9, '#d67b19', 2.8);
 
       const fgY = cY - eq.fgy * scale;
-      drawArrow(ctx, cX, cY, cX, fgY, 10, '#dc2626', 3);
+      drawArrow(ctx, cX, cY, cX, fgY, 9, '#dc2626', 2.8);
 
       ctx.setLineDash([3, 3]);
       ctx.strokeStyle = 'rgba(15, 126, 155, 0.4)';
@@ -1484,20 +1549,20 @@
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.font = 'bold 10px Inter, sans-serif';
+      ctx.font = 'bold 9.5px Inter, sans-serif';
 
       ctx.fillStyle = '#0f7e9b';
       ctx.textAlign = 'right';
-      ctx.fillText(`T₁ = ${eq.t1.toFixed(2)} N`, t1X - 6, t1Y - 4);
-      ctx.fillText(`T₁x = ${Math.abs(eq.t1x).toFixed(2)} N`, t1X - 6, cY + 14);
+      ctx.fillText(`T₁ = ${eq.t1.toFixed(2)} N`, t1X - 5, t1Y - 4);
+      ctx.fillText(`T₁x = ${Math.abs(eq.t1x).toFixed(2)} N`, t1X - 5, cY + 12);
 
       ctx.fillStyle = '#d67b19';
       ctx.textAlign = 'left';
-      ctx.fillText(`T₂ = ${eq.t2.toFixed(2)} N`, t2X + 6, t2Y - 4);
-      ctx.fillText(`T₂x = ${eq.t2x.toFixed(2)} N`, t2X + 6, cY + 14);
+      ctx.fillText(`T₂ = ${eq.t2.toFixed(2)} N`, t2X + 5, t2Y - 4);
+      ctx.fillText(`T₂x = ${eq.t2x.toFixed(2)} N`, t2X + 5, cY + 12);
 
       ctx.fillStyle = '#dc2626';
-      ctx.fillText(`Fg = ${eq.fg.toFixed(2)} N`, cX + 8, fgY);
+      ctx.fillText(`Fg = ${eq.fg.toFixed(2)} N`, cX + 6, fgY);
 
       ctx.restore();
     }
@@ -1507,9 +1572,10 @@
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width > 0 ? rect.width : (canvas.clientWidth || 380);
-      const h = rect.height > 0 ? rect.height : (canvas.clientHeight || 240);
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+
+      if (w < 10 || h < 10) return;
 
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1522,33 +1588,33 @@
       }
 
       const startX = w * 0.35;
-      const startY = h * 0.72;
-      const scale = 22;
+      const startY = h * 0.74;
+      const scale = 20;
 
       const tip1X = startX + eq.t1x * scale;
       const tip1Y = startY - eq.t1y * scale;
-      drawArrow(ctx, startX, startY, tip1X, tip1Y, 9, '#0f7e9b', 3);
+      drawArrow(ctx, startX, startY, tip1X, tip1Y, 8.5, '#0f7e9b', 2.8);
 
       const tip2X = tip1X + eq.t2x * scale;
       const tip2Y = tip1Y - eq.t2y * scale;
-      drawArrow(ctx, tip1X, tip1Y, tip2X, tip2Y, 9, '#d67b19', 3);
+      drawArrow(ctx, tip1X, tip1Y, tip2X, tip2Y, 8.5, '#d67b19', 2.8);
 
-      drawArrow(ctx, tip2X, tip2Y, startX, startY, 9, '#dc2626', 3);
+      drawArrow(ctx, tip2X, tip2Y, startX, startY, 8.5, '#dc2626', 2.8);
 
-      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.font = 'bold 10px Inter, sans-serif';
       ctx.fillStyle = '#0f7e9b';
-      ctx.fillText(`T₁ = ${eq.t1.toFixed(2)} N`, (startX + tip1X) / 2 - 35, (startY + tip1Y) / 2);
+      ctx.fillText(`T₁ = ${eq.t1.toFixed(2)} N`, (startX + tip1X) / 2 - 32, (startY + tip1Y) / 2);
 
       ctx.fillStyle = '#d67b19';
-      ctx.fillText(`T₂ = ${eq.t2.toFixed(2)} N`, (tip1X + tip2X) / 2 + 10, (tip1Y + tip2Y) / 2);
+      ctx.fillText(`T₂ = ${eq.t2.toFixed(2)} N`, (tip1X + tip2X) / 2 + 8, (tip1Y + tip2Y) / 2);
 
       ctx.fillStyle = '#dc2626';
-      ctx.fillText(`Fg = ${eq.fg.toFixed(2)} N`, tip2X + 8, (tip2Y + startY) / 2);
+      ctx.fillText(`Fg = ${eq.fg.toFixed(2)} N`, tip2X + 6, (tip2Y + startY) / 2);
 
       ctx.fillStyle = '#64748b';
-      ctx.font = '10px Inter, sans-serif';
+      ctx.font = '9.5px Inter, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Closed Polygon: ΣF = T₁ + T₂ + Fg = 0', w / 2, h - 10);
+      ctx.fillText('Closed Polygon: ΣF = T₁ + T₂ + Fg = 0', w / 2, h - 8);
 
       ctx.restore();
     }
