@@ -5,7 +5,7 @@
  * Zero DOM dependencies for full unit testability.
  */
 
-class BalancedForcesPhysics {
+var BalancedForcesPhysics = class BalancedForcesPhysics {
   static get GRAVITY_STANDARD() {
     return 9.80; // N/kg (or m/s^2)
   }
@@ -178,8 +178,11 @@ class BalancedForcesPhysics {
       actualMassG
     };
   }
-}
+};
 
+if (typeof window !== "undefined") {
+  window.BalancedForcesPhysics = BalancedForcesPhysics;
+}
 if (typeof module !== "undefined" && module.exports) {
   module.exports = BalancedForcesPhysics;
 }

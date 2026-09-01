@@ -77,8 +77,7 @@
         valKnotY: document.getElementById('valKnotY'),
         telemT1: document.getElementById('telemT1'),
         telemT2: document.getElementById('telemT2'),
-        telemAngle1: document.getElementById('telemAngle1'),
-        telemAngle2: document.getElementById('telemAngle2'),
+        telemKnotPos: document.getElementById('telemKnotPos'),
         studentMassInput: document.getElementById('studentMassInput'),
         btnCheckMystery: document.getElementById('btnCheckMystery'),
         mysteryFeedback: document.getElementById('mysteryFeedback'),
@@ -88,7 +87,6 @@
       // State (Normalized Coordinates for Resolution Independence)
       this.state = {
         activeScenario: 'symmetric',
-        workflowStep: 'measure',
         massKg: 0.500,
         g: 9.80,
 
@@ -102,7 +100,7 @@
           normX: 0.50,
           normY: 0.58,
           rotationDeg: 0,
-          radius: 110,
+          radius: 115,
           isSnapped: true
         },
 
@@ -116,9 +114,6 @@
         },
 
         // Toggles
-        showVectors: true,
-        showAngles: true,
-        showComponents: false,
         showLevelLines: true,
         showSpringDials: true,
 
@@ -219,17 +214,19 @@
       const eq = this.equilibrium;
       if (!eq) return;
 
+      // Only display what real sensors measure (Tensions) - No spoiled angles/components
       if (this.dom.telemT1) this.dom.telemT1.textContent = `${eq.t1.toFixed(2)} N`;
       if (this.dom.telemT2) this.dom.telemT2.textContent = `${eq.t2.toFixed(2)} N`;
-      if (this.dom.telemAngle1) this.dom.telemAngle1.textContent = `${eq.geometry.theta1Deg.toFixed(1)}°`;
-      if (this.dom.telemAngle2) this.dom.telemAngle2.textContent = `${eq.geometry.theta2Deg.toFixed(1)}°`;
+      if (this.dom.telemKnotPos) {
+        this.dom.telemKnotPos.textContent = `(${Math.round(this.state.normKnotX * 100)}%, ${Math.round(this.state.normKnotY * 100)}%)`;
+      }
 
       if (this.dom.valMass) {
         if (this.state.activeScenario === 'mystery') {
           this.dom.valMass.textContent = '??? g (Hidden)';
         } else {
           const massG = Math.round(this.state.massKg * 1000);
-          this.dom.valMass.textContent = `${massG} g (${(this.state.massKg * this.state.g).toFixed(2)} N)`;
+          this.dom.valMass.textContent = `${massG} g`;
         }
       }
 
@@ -250,30 +247,6 @@
           this.setScenario(tab.dataset.scenario);
         });
       });
-
-      // Workflow Pills
-      const btnMeasure = document.getElementById('btnModeMeasure');
-      const btnVector = document.getElementById('btnModeVector');
-      if (btnMeasure && btnVector) {
-        btnMeasure.addEventListener('click', () => {
-          btnMeasure.classList.add('active');
-          btnVector.classList.remove('active');
-          this.state.workflowStep = 'measure';
-          this.state.showVectors = true;
-          this.state.showComponents = false;
-          this.render();
-        });
-        btnVector.addEventListener('click', () => {
-          btnVector.classList.add('active');
-          btnMeasure.classList.remove('active');
-          this.state.workflowStep = 'vector';
-          this.state.showVectors = true;
-          this.state.showComponents = true;
-          const chkComp = document.getElementById('chkComponents');
-          if (chkComp) chkComp.checked = true;
-          this.render();
-        });
-      }
 
       // Mass Slider
       if (this.dom.sliderMass) {
@@ -299,9 +272,6 @@
 
       // Knot X & Y Sliders (Percentages)
       if (this.dom.sliderKnotX) {
-        this.dom.sliderKnotX.min = 28;
-        this.dom.sliderKnotX.max = 72;
-        this.dom.sliderKnotX.value = Math.round(this.state.normKnotX * 100);
         this.dom.sliderKnotX.addEventListener('input', (e) => {
           this.state.normKnotX = parseFloat(e.target.value) / 100;
           if (this.state.protractor.isSnapped) {
@@ -313,9 +283,6 @@
       }
 
       if (this.dom.sliderKnotY) {
-        this.dom.sliderKnotY.min = 38;
-        this.dom.sliderKnotY.max = 76;
-        this.dom.sliderKnotY.value = Math.round(this.state.normKnotY * 100);
         this.dom.sliderKnotY.addEventListener('input', (e) => {
           this.state.normKnotY = parseFloat(e.target.value) / 100;
           if (this.state.protractor.isSnapped) {
@@ -381,30 +348,6 @@
       }
 
       // Toggles
-      const chkVectors = document.getElementById('chkVectors');
-      if (chkVectors) {
-        chkVectors.addEventListener('change', (e) => {
-          this.state.showVectors = e.target.checked;
-          this.render();
-        });
-      }
-
-      const chkAngles = document.getElementById('chkAngles');
-      if (chkAngles) {
-        chkAngles.addEventListener('change', (e) => {
-          this.state.showAngles = e.target.checked;
-          this.render();
-        });
-      }
-
-      const chkComponents = document.getElementById('chkComponents');
-      if (chkComponents) {
-        chkComponents.addEventListener('change', (e) => {
-          this.state.showComponents = e.target.checked;
-          this.render();
-        });
-      }
-
       const chkLevel = document.getElementById('chkLevel');
       if (chkLevel) {
         chkLevel.addEventListener('change', (e) => {
@@ -469,36 +412,31 @@
       this.state.activeScenario = scenarioId;
 
       if (scenarioId === 'symmetric') {
-        this.dom.bannerTitle.textContent = '1. Symmetric Balanced Forces';
-        this.dom.bannerDesc.textContent = 'A 500 g load is suspended centrally between two ring stands. Equal angles produce equal cord tensions.';
+        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '1. Symmetric Balanced Forces';
+        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'A load is suspended symmetrically between two stands. Use the protractor to measure the angles and read the spring scales.';
         this.state.massKg = 0.500;
         this.state.normKnotX = 0.50;
         this.state.normKnotY = 0.58;
         if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
-        this.state.showAngles = true;
       } else if (scenarioId === 'asymmetric') {
-        this.dom.bannerTitle.textContent = '2. Asymmetric Angles & Tensions';
-        this.dom.bannerDesc.textContent = 'The knot is shifted horizontally toward the left stand. The steeper cord carries more vertical load.';
+        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '2. Asymmetric Setup';
+        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'The knot is shifted horizontally. Use the protractor to measure both cord angles and determine how tension is distributed.';
         this.state.massKg = 0.600;
         this.state.normKnotX = 0.38;
         this.state.normKnotY = 0.58;
         if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
-        this.state.showAngles = true;
       } else if (scenarioId === 'mystery') {
-        this.dom.bannerTitle.textContent = '3. Mystery Mass Challenge';
-        this.dom.bannerDesc.textContent = 'The hanging mass is unknown. Measure cord tensions and angles with the protractor to determine the load.';
+        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '3. Mystery Mass Challenge';
+        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'The hanging mass is unknown. Measure cord tensions and angles with the protractor to determine the load.';
         this.state.normKnotX = 0.44;
         this.state.normKnotY = 0.60;
         if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'block';
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'none';
-        this.state.showAngles = false;
-        const chk = document.getElementById('chkAngles');
-        if (chk) chk.checked = false;
       } else if (scenarioId === 'sandbox') {
-        this.dom.bannerTitle.textContent = '4. Custom Statics Sandbox';
-        this.dom.bannerDesc.textContent = 'Freely manipulate hanging mass, horizontal placement, and vertical drop to explore any 2D concurrent force setup.';
+        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '4. Custom Statics Sandbox';
+        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'Freely manipulate hanging mass, horizontal placement, and vertical drop to explore any 2D concurrent force setup.';
         if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
       }
@@ -567,7 +505,7 @@
       const th2 = parseFloat(th2In.value);
 
       if (isNaN(t1) || isNaN(t2) || isNaN(th1) || isNaN(th2)) {
-        outDiv.innerHTML = '<p style="color:var(--accent-amber); font-weight:700; margin-top:8px;">Please fill in all 4 measured fields.</p>';
+        outDiv.innerHTML = '<p style="color:var(--accent-amber); font-weight:700; margin-top:8px;">Please fill in all 4 measured fields (T₁, T₂, θ₁, θ₂).</p>';
         return;
       }
 
@@ -598,25 +536,11 @@
       const eq = this.equilibrium;
       if (!eq) return;
 
-      const calc = BalancedForcesPhysics.calculateMassFromMeasurements(
-        eq.t1,
-        eq.t2,
-        eq.geometry.theta1Deg,
-        eq.geometry.theta2Deg,
-        this.state.g
-      );
-
       const trial = {
         id: this.state.trials.length + 1,
-        massG: Math.round(eq.massGrams),
-        theta1: eq.geometry.theta1Deg.toFixed(1),
-        theta2: eq.geometry.theta2Deg.toFixed(1),
         t1: eq.t1.toFixed(2),
         t2: eq.t2.toFixed(2),
-        t1x: calc.t1x.toFixed(2),
-        t2x: calc.t2x.toFixed(2),
-        sumFy: (parseFloat(calc.t1y) + parseFloat(calc.t2y)).toFixed(2),
-        calcMassG: calc.calculatedMassG.toFixed(1)
+        knotPos: `(${Math.round(this.state.normKnotX * 100)}%, ${Math.round(this.state.normKnotY * 100)}%)`
       };
 
       this.state.trials.push(trial);
@@ -634,7 +558,7 @@
       if (this.state.trials.length === 0) {
         this.dom.trialsTableBody.innerHTML = `
           <tr>
-            <td colspan="10" style="text-align: center; color: var(--muted); padding: 1rem;">
+            <td colspan="6" style="text-align: center; color: var(--muted); padding: 1rem;">
               No trials recorded yet. Click "Log Current Trial" to record.
             </td>
           </tr>
@@ -645,15 +569,11 @@
       this.dom.trialsTableBody.innerHTML = this.state.trials.map(t => `
         <tr>
           <td><strong>#${t.id}</strong></td>
-          <td>${t.massG} g</td>
-          <td>${t.theta1}°</td>
-          <td>${t.theta2}°</td>
           <td>${t.t1} N</td>
           <td>${t.t2} N</td>
-          <td>${t.t1x} N</td>
-          <td>${t.t2x} N</td>
-          <td>${t.sumFy} N</td>
-          <td><strong>${t.calcMassG} g</strong></td>
+          <td>${t.knotPos}</td>
+          <td><span style="color: var(--muted); font-style: italic;">[Measure]</span></td>
+          <td><span style="color: var(--muted); font-style: italic;">[Measure]</span></td>
         </tr>
       `).join('');
     }
@@ -664,9 +584,9 @@
         return;
       }
 
-      const headers = ['Trial', 'Mass_g', 'Theta1_deg', 'Theta2_deg', 'T1_N', 'T2_N', 'T1x_N', 'T2x_N', 'Sum_Fy_N', 'Calc_Mass_g'];
+      const headers = ['Trial', 'T1_N', 'T2_N', 'Knot_Pos', 'Measured_Theta1', 'Measured_Theta2'];
       const rows = this.state.trials.map(t => [
-        t.id, t.massG, t.theta1, t.theta2, t.t1, t.t2, t.t1x, t.t2x, t.sumFy, t.calcMassG
+        t.id, t.t1, t.t2, t.knotPos, '', ''
       ]);
 
       const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -674,7 +594,7 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'balanced_forces_data.csv';
+      link.download = 'balanced_forces_lab_data.csv';
       link.click();
       URL.revokeObjectURL(url);
     }
@@ -685,9 +605,9 @@
         return;
       }
 
-      const headers = ['Trial', 'Mass (g)', 'θ₁ (°)', 'θ₂ (°)', 'T₁ (N)', 'T₂ (N)', 'T₁x (N)', 'T₂x (N)', 'ΣFy (N)', 'Calc Mass (g)'];
+      const headers = ['Trial', 'T1 (N)', 'T2 (N)', 'Knot Pos', 'Measured θ₁', 'Measured θ₂'];
       const rows = this.state.trials.map(t => [
-        t.id, `${t.massG} g`, t.theta1, t.theta2, t.t1, t.t2, t.t1x, t.t2x, t.sumFy, t.calcMassG
+        t.id, t.t1, t.t2, t.knotPos, '', ''
       ]);
 
       const text = [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
@@ -862,7 +782,7 @@
       // 2. Ring Stands
       this.drawRingStands(ctx, w, h, s1, s2);
 
-      // 3. Level Lines
+      // 3. Level Reference Lines
       if (this.state.showLevelLines) {
         this.drawLevelLines(ctx, w, h, s1, s2, p);
       }
@@ -870,30 +790,20 @@
       // 4. Spring Scales
       this.drawSpringScales(ctx, s1, s2, p);
 
-      // 5. Cords & Knot
+      // 5. Cords & Central Knot Ring
       this.drawCordsAndKnot(ctx, s1, s2, p);
 
-      // 6. Hanging Mass
+      // 6. Hanging Mass (Prominent & Clear)
       this.drawHangingMass(ctx, p);
 
-      // 7. Force Vectors
-      if (this.state.showVectors) {
-        this.drawForceVectors(ctx, p);
-      }
-
-      // 8. Angle Visualizers
-      if (this.state.showAngles) {
-        this.drawAngleVisualizers(ctx, p);
-      }
-
-      // 9. Interactive Protractor
+      // 7. Interactive Protractor Tool (For student angle measurement)
       if (this.state.protractor.visible) {
         const protX = w * this.state.protractor.normX;
         const protY = h * this.state.protractor.normY;
         this.drawProtractor(ctx, protX, protY);
       }
 
-      // 10. Ruler
+      // 8. Ruler Tool
       if (this.state.ruler.visible) {
         const rx = w * this.state.ruler.normX;
         const ry = h * this.state.ruler.normY;
@@ -905,9 +815,9 @@
 
     drawApparatusBackground(ctx, w, h) {
       ctx.save();
-      ctx.strokeStyle = '#e6f0f5';
+      ctx.strokeStyle = '#e8f2f7';
       ctx.lineWidth = 1;
-      const step = Math.max(24, Math.floor(w / 28));
+      const step = Math.max(24, Math.floor(w / 26));
 
       for (let x = 0; x <= w; x += step) {
         ctx.beginPath();
@@ -924,10 +834,10 @@
 
       // Tabletop Base
       const tableY = h * 0.88;
-      ctx.fillStyle = '#f1f5f9';
+      ctx.fillStyle = '#edf4f8';
       ctx.fillRect(0, tableY, w, h - tableY);
       ctx.strokeStyle = '#cbd5e1';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.moveTo(0, tableY);
       ctx.lineTo(w, tableY);
@@ -941,7 +851,7 @@
       const rodTopY = h * 0.12;
 
       const drawStand = (standX, clampY, isLeft) => {
-        // Steel Base
+        // Steel Base Plate
         ctx.fillStyle = '#475569';
         drawRoundedRect(ctx, standX - 35, tableY - 12, 70, 12, 3, true, true);
         ctx.strokeStyle = '#1e293b';
@@ -949,42 +859,45 @@
         ctx.stroke();
 
         // Vertical Steel Rod
-        const grad = ctx.createLinearGradient(standX - 4, 0, standX + 4, 0);
+        const grad = ctx.createLinearGradient(standX - 5, 0, standX + 5, 0);
         grad.addColorStop(0, '#cbd5e1');
         grad.addColorStop(0.5, '#ffffff');
         grad.addColorStop(1, '#94a3b8');
         ctx.fillStyle = grad;
-        ctx.fillRect(standX - 4, rodTopY, 8, tableY - rodTopY - 12);
-        ctx.strokeRect(standX - 4, rodTopY, 8, tableY - rodTopY - 12);
+        ctx.fillRect(standX - 5, rodTopY, 10, tableY - rodTopY - 12);
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(standX - 5, rodTopY, 10, tableY - rodTopY - 12);
 
         // Rod Cap
         ctx.fillStyle = '#334155';
         ctx.beginPath();
-        ctx.arc(standX, rodTopY, 5, 0, Math.PI * 2);
+        ctx.arc(standX, rodTopY, 6, 0, Math.PI * 2);
         ctx.fill();
 
-        // Clamp
+        // Right-Angle Clamp
         ctx.fillStyle = '#0f7e9b';
-        drawRoundedRect(ctx, standX - 10, clampY - 9, 20, 18, 3, true, true);
+        drawRoundedRect(ctx, standX - 11, clampY - 10, 22, 20, 3, true, true);
         ctx.strokeStyle = '#0a576b';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Knob
+        // Clamp Adjustment Knob
         ctx.fillStyle = '#d67b19';
         ctx.beginPath();
-        ctx.arc(standX + (isLeft ? -12 : 12), clampY, 4.5, 0, Math.PI * 2);
+        ctx.arc(standX + (isLeft ? -13 : 13), clampY, 5, 0, Math.PI * 2);
         ctx.fill();
       };
 
-      const stand1X = s1.x - 24;
-      const stand2X = s2.x + 24;
+      const stand1X = s1.x - 26;
+      const stand2X = s2.x + 26;
 
       drawStand(stand1X, s1.y, true);
       drawStand(stand2X, s2.y, false);
 
-      // Support Arms
-      ctx.strokeStyle = '#64748b';
-      ctx.lineWidth = 5;
+      // Support Extension Arms
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 6;
       ctx.lineCap = 'round';
       
       ctx.beginPath();
@@ -1040,89 +953,89 @@
         ctx.translate(anchor.x, anchor.y);
         ctx.rotate(angleRad);
 
-        // Suspension Ring
+        // Top Suspension Ring
         ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 2.2;
+        ctx.lineWidth = 2.4;
         ctx.beginPath();
-        ctx.arc(0, 0, 7, 0, Math.PI * 2);
+        ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Housing
-        const scaleLen = 65;
-        const barrelW = 18;
+        // Barrel Housing
+        const scaleLen = 70;
+        const barrelW = 20;
 
-        ctx.fillStyle = 'rgba(240, 248, 250, 0.92)';
-        drawRoundedRect(ctx, 7, -barrelW / 2, scaleLen, barrelW, 3, true, true);
+        ctx.fillStyle = 'rgba(240, 248, 250, 0.94)';
+        drawRoundedRect(ctx, 8, -barrelW / 2, scaleLen, barrelW, 4, true, true);
         ctx.strokeStyle = '#0f7e9b';
-        ctx.lineWidth = 1.4;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
 
         // Caps
         ctx.fillStyle = '#0f7e9b';
-        drawRoundedRect(ctx, 7, -barrelW / 2, 7, barrelW, 2, true, false);
-        drawRoundedRect(ctx, 7 + scaleLen - 7, -barrelW / 2, 7, barrelW, 2, true, false);
+        drawRoundedRect(ctx, 8, -barrelW / 2, 8, barrelW, 2, true, false);
+        drawRoundedRect(ctx, 8 + scaleLen - 8, -barrelW / 2, 8, barrelW, 2, true, false);
 
-        // Newton Ticks
+        // Graduated Newton Ticks
         ctx.fillStyle = '#0a576b';
-        ctx.font = '7px Inter, sans-serif';
+        ctx.font = '7.5px Inter, sans-serif';
         ctx.textAlign = 'center';
         for (let n = 0; n <= 10; n += 2) {
-          const tickX = 16 + (n / 10) * (scaleLen - 25);
+          const tickX = 18 + (n / 10) * (scaleLen - 28);
           ctx.beginPath();
           ctx.moveTo(tickX, -barrelW / 2 + 2);
-          ctx.lineTo(tickX, -barrelW / 2 + 5);
+          ctx.lineTo(tickX, -barrelW / 2 + 6);
           ctx.stroke();
-          ctx.fillText(n.toString(), tickX, 6);
+          ctx.fillText(n.toString(), tickX, 7);
         }
 
         // Spring Deflection
-        const maxExtension = scaleLen - 25;
+        const maxExtension = scaleLen - 28;
         const extension = Math.min(maxExtension, (tension / 10) * maxExtension);
-        const indicatorX = 16 + extension;
+        const indicatorX = 18 + extension;
 
-        ctx.strokeStyle = '#64748b';
-        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.4;
         ctx.beginPath();
-        ctx.moveTo(16, 0);
+        ctx.moveTo(18, 0);
         const coils = 7;
         for (let i = 0; i <= coils; i++) {
-          const cx = 16 + (i / coils) * extension;
-          const cy = (i % 2 === 0 ? -2.5 : 2.5);
+          const cx = 18 + (i / coils) * extension;
+          const cy = (i % 2 === 0 ? -3 : 3);
           ctx.lineTo(cx, cy);
         }
         ctx.lineTo(indicatorX, 0);
         ctx.stroke();
 
-        // Red Indicator
+        // Red Indicator Ring
         ctx.fillStyle = '#dc2626';
-        ctx.fillRect(indicatorX - 1.2, -barrelW / 2 + 2, 2.4, barrelW - 4);
+        ctx.fillRect(indicatorX - 1.5, -barrelW / 2 + 2, 3, barrelW - 4);
 
         // Hook Rod
         ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 2.2;
+        ctx.lineWidth = 2.4;
         ctx.beginPath();
         ctx.moveTo(indicatorX, 0);
-        ctx.lineTo(7 + scaleLen + 8, 0);
+        ctx.lineTo(8 + scaleLen + 8, 0);
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(7 + scaleLen + 11, 3.5, 3.5, -Math.PI / 2, Math.PI / 2);
+        ctx.arc(8 + scaleLen + 12, 4, 4, -Math.PI / 2, Math.PI / 2);
         ctx.stroke();
 
-        // Digital Force Badge
+        // Digital Sensor Force Badge
         if (this.state.showSpringDials) {
           ctx.save();
-          ctx.rotate(-angleRad); // Keep text horizontal
+          ctx.rotate(-angleRad);
           ctx.fillStyle = '#ffffff';
-          drawRoundedRect(ctx, -24, isLeft ? -38 : 22, 48, 20, 4, true, true);
+          drawRoundedRect(ctx, -26, isLeft ? -42 : 24, 52, 22, 4, true, true);
           ctx.strokeStyle = '#0f7e9b';
-          ctx.lineWidth = 1.4;
+          ctx.lineWidth = 1.5;
           ctx.stroke();
 
           ctx.fillStyle = '#0f7e9b';
-          ctx.font = 'bold 9.5px Inter, sans-serif';
+          ctx.font = 'bold 10px Inter, sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(`${tension.toFixed(2)} N`, 0, isLeft ? -25 : 35);
+          ctx.fillText(`${tension.toFixed(2)} N`, 0, isLeft ? -28 : 38);
           ctx.restore();
         }
 
@@ -1135,8 +1048,8 @@
 
     drawCordsAndKnot(ctx, s1, s2, p) {
       ctx.save();
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 2.4;
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2.6;
       ctx.lineCap = 'round';
 
       // Left Cord
@@ -1157,25 +1070,26 @@
       ctx.lineTo(p.x, p.y + 35);
       ctx.stroke();
 
-      // Knot Ring
+      // Knot Ring Glow
       if (this.state.isHoveringKnot || this.state.dragTarget === 'knot') {
-        ctx.fillStyle = 'rgba(214, 123, 25, 0.3)';
+        ctx.fillStyle = 'rgba(214, 123, 25, 0.35)';
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 16, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
         ctx.fill();
       }
 
+      // Central Brass Knot Ring
       ctx.fillStyle = '#d67b19';
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 7.5, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#b86510';
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2;
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
@@ -1188,50 +1102,57 @@
       ctx.save();
 
       if (this.state.activeScenario === 'mystery') {
-        const boxW = 50;
-        const boxH = 58;
+        const boxW = 54;
+        const boxH = 64;
         const boxX = p.x - boxW / 2;
         const boxY = topY + 6;
 
+        // Top Hook
         ctx.strokeStyle = '#475569';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(p.x, topY + 3, 4.5, -Math.PI / 2, Math.PI / 2);
+        ctx.arc(p.x, topY + 3, 5, -Math.PI / 2, Math.PI / 2);
         ctx.stroke();
 
+        // Mystery Load Canister
         ctx.fillStyle = '#d67b19';
-        drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 5, true, true);
+        drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 6, true, true);
         ctx.strokeStyle = '#b86510';
-        ctx.lineWidth = 1.8;
+        ctx.lineWidth = 2;
         ctx.stroke();
 
+        // Bold Question Mark
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 22px Inter, sans-serif';
+        ctx.font = 'bold 26px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('?', p.x, boxY + boxH / 2 - 3);
+        ctx.fillText('?', p.x, boxY + boxH / 2 - 4);
 
-        ctx.font = 'bold 9.5px Inter, sans-serif';
-        ctx.fillText(`MASS ${this.state.currentMystery}`, p.x, boxY + boxH - 10);
+        // Mass ID Label
+        ctx.font = 'bold 10px Inter, sans-serif';
+        ctx.fillText(`MASS ${this.state.currentMystery}`, p.x, boxY + boxH - 12);
       } else {
-        const hangerW = 40;
-        const discH = 9;
+        const hangerW = 44;
+        const discH = 10;
         const massG = Math.round(massKg * 1000);
 
+        // Slotted Mass Hanger Rod
         ctx.strokeStyle = '#64748b';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(p.x, topY + 3, 3.5, 0, Math.PI * 2);
+        ctx.arc(p.x, topY + 3, 4, 0, Math.PI * 2);
         ctx.moveTo(p.x, topY + 7);
-        ctx.lineTo(p.x, topY + 60);
+        ctx.lineTo(p.x, topY + 66);
         ctx.stroke();
 
+        // Base Plate
         ctx.fillStyle = '#475569';
-        drawRoundedRect(ctx, p.x - 20, topY + 58, 40, 5, 2, true, false);
+        drawRoundedRect(ctx, p.x - 22, topY + 64, 44, 6, 2, true, false);
 
+        // Stacked Brass Slotted Weights
         const numDiscs = Math.max(1, Math.min(6, Math.ceil(massG / 150)));
         for (let i = 0; i < numDiscs; i++) {
-          const discY = topY + 58 - (i + 1) * (discH + 1);
+          const discY = topY + 64 - (i + 1) * (discH + 1);
           const grad = ctx.createLinearGradient(p.x - hangerW / 2, discY, p.x + hangerW / 2, discY);
           grad.addColorStop(0, '#d67b19');
           grad.addColorStop(0.5, '#fef5ea');
@@ -1242,98 +1163,20 @@
           ctx.lineWidth = 1;
           ctx.stroke();
 
+          // Slotted Notch
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(p.x - 2, discY, 4, discH);
         }
 
+        // Hanging Load Value Tag
         ctx.fillStyle = '#0f7e9b';
-        drawRoundedRect(ctx, p.x - 28, topY + 68, 56, 18, 3, true, false);
+        drawRoundedRect(ctx, p.x - 30, topY + 76, 60, 20, 4, true, false);
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 10px Inter, sans-serif';
+        ctx.font = 'bold 11px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`${massG} g`, p.x, topY + 77);
+        ctx.fillText(`${massG} g`, p.x, topY + 86);
       }
-
-      ctx.restore();
-    }
-
-    drawForceVectors(ctx, p) {
-      const eq = this.equilibrium;
-      if (!eq) return;
-
-      ctx.save();
-      const scale = 18;
-
-      const t1EndX = p.x + eq.t1x * scale;
-      const t1EndY = p.y - eq.t1y * scale;
-      drawArrow(ctx, p.x, p.y, t1EndX, t1EndY, 9, '#0f7e9b', 3);
-
-      const t2EndX = p.x + eq.t2x * scale;
-      const t2EndY = p.y - eq.t2y * scale;
-      drawArrow(ctx, p.x, p.y, t2EndX, t2EndY, 9, '#d67b19', 3);
-
-      const fgEndY = p.y - eq.fgy * scale;
-      drawArrow(ctx, p.x, p.y, p.x, fgEndY, 9, '#dc2626', 3);
-
-      if (this.state.showComponents) {
-        ctx.setLineDash([3, 3]);
-        ctx.lineWidth = 1.2;
-
-        ctx.strokeStyle = 'rgba(15, 126, 155, 0.6)';
-        ctx.beginPath();
-        ctx.moveTo(t1EndX, t1EndY);
-        ctx.lineTo(p.x, t1EndY);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(214, 123, 25, 0.6)';
-        ctx.beginPath();
-        ctx.moveTo(t2EndX, t2EndY);
-        ctx.lineTo(p.x, t2EndY);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-      }
-
-      ctx.restore();
-    }
-
-    drawAngleVisualizers(ctx, p) {
-      const eq = this.equilibrium;
-      if (!eq) return;
-
-      ctx.save();
-      const radius = 40;
-
-      // Angle 1: Sweep from 180° (-x) upwards by theta1
-      ctx.strokeStyle = '#0f7e9b';
-      ctx.lineWidth = 1.8;
-      ctx.fillStyle = 'rgba(15, 126, 155, 0.15)';
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.arc(p.x, p.y, radius, Math.PI, Math.PI - eq.geometry.theta1Rad, true);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#0f7e9b';
-      ctx.font = 'bold 11px Inter, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(`θ₁ = ${eq.geometry.theta1Deg.toFixed(1)}°`, p.x - radius - 6, p.y - 12);
-
-      // Angle 2: Sweep from 0° (+x) upwards by theta2
-      ctx.strokeStyle = '#d67b19';
-      ctx.fillStyle = 'rgba(214, 123, 25, 0.15)';
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.arc(p.x, p.y, radius, 0, -eq.geometry.theta2Rad, true);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#d67b19';
-      ctx.textAlign = 'left';
-      ctx.fillText(`θ₂ = ${eq.geometry.theta2Deg.toFixed(1)}°`, p.x + radius + 6, p.y - 12);
 
       ctx.restore();
     }
@@ -1345,9 +1188,10 @@
 
       const r = this.state.protractor.radius;
 
-      ctx.fillStyle = 'rgba(224, 242, 247, 0.75)';
+      // Semi-transparent Acrylic Body (180 deg)
+      ctx.fillStyle = 'rgba(224, 242, 247, 0.78)';
       ctx.strokeStyle = '#0f7e9b';
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2;
 
       ctx.beginPath();
       ctx.arc(0, 0, r, Math.PI, 0, false);
@@ -1355,40 +1199,43 @@
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      // Inner Cutout
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       ctx.beginPath();
       ctx.arc(0, 0, r * 0.45, Math.PI, 0, false);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
+      // Crosshairs Center
       ctx.strokeStyle = '#d67b19';
-      ctx.lineWidth = 1.6;
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.moveTo(-12, 0);
-      ctx.lineTo(12, 0);
-      ctx.moveTo(0, -12);
-      ctx.lineTo(0, 12);
+      ctx.moveTo(-14, 0);
+      ctx.lineTo(14, 0);
+      ctx.moveTo(0, -14);
+      ctx.lineTo(0, 14);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.arc(0, 0, 4, 0, Math.PI * 2);
+      ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
       ctx.stroke();
 
+      // Graduated Degree Ticks (0° to 180°)
       ctx.fillStyle = '#0a576b';
       ctx.strokeStyle = '#0f7e9b';
-      ctx.font = '7.5px Inter, sans-serif';
+      ctx.font = '8px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
       for (let deg = 0; deg <= 180; deg += 1) {
         const rad = Math.PI - (deg * Math.PI) / 180;
-        let tickLen = 3.5;
+        let tickLen = 4;
 
         if (deg % 10 === 0) {
-          tickLen = 10;
+          tickLen = 11;
         } else if (deg % 5 === 0) {
-          tickLen = 6.5;
+          tickLen = 7;
         }
 
         const x1 = (r - 2) * Math.cos(rad);
@@ -1396,36 +1243,37 @@
         const x2 = (r - 2 - tickLen) * Math.cos(rad);
         const y2 = -(r - 2 - tickLen) * Math.sin(rad);
 
-        ctx.lineWidth = (deg % 10 === 0) ? 1.2 : 0.6;
+        ctx.lineWidth = (deg % 10 === 0) ? 1.4 : 0.7;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
 
         if (deg % 10 === 0) {
-          const textR = r - 16;
+          const textR = r - 18;
           const tx = textR * Math.cos(rad);
           const ty = -textR * Math.sin(rad);
           ctx.fillText(deg.toString(), tx, ty);
         }
       }
 
-      // Rotation Handle
-      const rotX = r + 16;
+      // Rotation Drag Handle
+      const rotX = r + 18;
       const rotY = 0;
       ctx.fillStyle = '#d67b19';
       ctx.beginPath();
-      ctx.arc(rotX, rotY, 7, 0, Math.PI * 2);
+      ctx.arc(rotX, rotY, 7.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.8;
+      ctx.lineWidth = 2;
       ctx.stroke();
 
+      // Tool Label
       ctx.fillStyle = '#0f7e9b';
-      drawRoundedRect(ctx, -35, -r - 16, 70, 14, 3, true, false);
+      drawRoundedRect(ctx, -38, -r - 18, 76, 16, 3, true, false);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 8.5px Inter, sans-serif';
-      ctx.fillText('PROTRACTOR', 0, -r - 9);
+      ctx.font = 'bold 9px Inter, sans-serif';
+      ctx.fillText('PROTRACTOR', 0, -r - 10);
 
       ctx.restore();
     }
@@ -1438,15 +1286,15 @@
       const len = this.state.ruler.length;
       const h = 28;
 
-      ctx.fillStyle = 'rgba(254, 245, 234, 0.9)';
+      ctx.fillStyle = 'rgba(254, 245, 234, 0.92)';
       drawRoundedRect(ctx, 0, 0, len, h, 3, true, true);
       ctx.strokeStyle = '#d67b19';
-      ctx.lineWidth = 1.4;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
       ctx.fillStyle = '#78350f';
       ctx.strokeStyle = '#b86510';
-      ctx.font = '7.5px Inter, sans-serif';
+      ctx.font = '8px Inter, sans-serif';
       ctx.textAlign = 'center';
 
       const mmSpacing = 3.5;
@@ -1454,7 +1302,7 @@
 
       for (let cm = 0; cm <= totalCm; cm++) {
         const cmX = cm * mmSpacing * 10;
-        ctx.lineWidth = 1.4;
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(cmX, 0);
         ctx.lineTo(cmX, 10);
@@ -1467,7 +1315,7 @@
         for (let mm = 1; mm < 10; mm++) {
           const mmX = cmX + mm * mmSpacing;
           if (mmX < len) {
-            ctx.lineWidth = 0.7;
+            ctx.lineWidth = 0.8;
             ctx.beginPath();
             ctx.moveTo(mmX, 0);
             ctx.lineTo(mmX, mm === 5 ? 7 : 4);
@@ -1554,12 +1402,10 @@
       ctx.fillStyle = '#0f7e9b';
       ctx.textAlign = 'right';
       ctx.fillText(`T₁ = ${eq.t1.toFixed(2)} N`, t1X - 5, t1Y - 4);
-      ctx.fillText(`T₁x = ${Math.abs(eq.t1x).toFixed(2)} N`, t1X - 5, cY + 12);
 
       ctx.fillStyle = '#d67b19';
       ctx.textAlign = 'left';
       ctx.fillText(`T₂ = ${eq.t2.toFixed(2)} N`, t2X + 5, t2Y - 4);
-      ctx.fillText(`T₂x = ${eq.t2x.toFixed(2)} N`, t2X + 5, cY + 12);
 
       ctx.fillStyle = '#dc2626';
       ctx.fillText(`Fg = ${eq.fg.toFixed(2)} N`, cX + 6, fgY);
