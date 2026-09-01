@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Balanced Forces: 2D Statics Lab | The Thinking Experiment</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Decorative background grid -->
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <div class="shell">
+    <!-- Header Banner -->
+    <header class="hero">
+      <div class="hero-top">
+        <div>
+          <a href="https://thinking-experiment-sims.github.io/interactive-physics/" class="brand-badge" style="text-decoration: none;" title="Go to Physics Simulations Hub">← The Thinking Experiment</a>
+          <h1>Balanced Forces: Hanging Mass &amp; 2D Statics Lab</h1>
+          <p class="hero-subtitle">
+            Experimentally determine the mass of a suspended load by reading cord tensions with dual spring force sensors and measuring suspension angles using an interactive virtual protractor.
+          </p>
+        </div>
+        <div class="hero-meta-badges">
+          <a href="https://thinking-experiment-sims.github.io/interactive-physics/" class="btn btn-sm btn-ghost" style="background: var(--surface-alt); color: var(--ink); border: 1px solid var(--border); text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700;">🏠 Simulation Hub</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Scenario Navigation Tabs -->
+    <nav class="scenario-nav" aria-label="Balanced Forces Scenarios">
+      <button class="scenario-tab active" data-scenario="symmetric">
+        ⚖️ 1. Symmetric Tension
+      </button>
+      <button class="scenario-tab" data-scenario="asymmetric">
+        📐 2. Asymmetric Angles
+      </button>
+      <button class="scenario-tab" data-scenario="mystery">
+        🧪 3. Mystery Mass Challenge
+      </button>
+      <button class="scenario-tab" data-scenario="sandbox">
+        ⚙️ 4. Custom Statics Sandbox
+      </button>
+    </nav>
+
+    <!-- Active Scenario Description Banner -->
+    <section class="scenario-banner" aria-label="Current Scenario Description">
+      <div>
+        <h2 class="scenario-banner-title" id="bannerTitle">1. Symmetric Balanced Forces</h2>
+        <p class="scenario-banner-desc" id="bannerDesc">
+          A 500 g load is suspended centrally between two ring stands. Equal angles produce equal cord tensions.
+        </p>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+        <!-- Pedagogical Mode Switcher -->
+        <div class="workflow-pill-group" aria-label="Modeling Workflow Step">
+          <button class="workflow-pill-btn active" id="btnModeMeasure">
+            <span>📐</span> 1. Measure &amp; Observe
+          </button>
+          <button class="workflow-pill-btn" id="btnModeVector">
+            <span>📊</span> 2. Vector Resolution
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sandbox Configuration Panel (Free Play Controls) -->
+    <section class="sandbox-settings" id="sandboxSettings">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+        <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-amber-dark); margin: 0;">
+          ⚙️ Apparatus &amp; Geometry Parameters
+        </h3>
+        <span style="font-size: 0.8rem; color: var(--muted); font-weight: 500;">
+          💡 You can also drag the brass knot directly on the canvas!
+        </span>
+      </div>
+
+      <div class="sandbox-controls-grid">
+        <!-- Mass Control -->
+        <div class="sandbox-control-item" id="massControlItem">
+          <label>Hanging Mass (<span class="math-expr">m</span>): <span id="valMass" style="color: var(--primary-teal-dark); font-weight: 700;">500 g (4.90 N)</span></label>
+          <input type="range" class="range-slider" id="sliderMass" min="50" max="1000" step="25" value="500">
+          <div class="mass-preset-bar">
+            <button class="preset-chip" data-mass="100">100g</button>
+            <button class="preset-chip" data-mass="250">250g</button>
+            <button class="preset-chip active" data-mass="500">500g</button>
+            <button class="preset-chip" data-mass="800">800g</button>
+          </div>
+        </div>
+
+        <!-- Knot Horizontal Position -->
+        <div class="sandbox-control-item">
+          <label>Knot Position (<span class="math-expr">x</span>): <span id="valKnotX" style="color: var(--accent-amber); font-weight: 700;">Center (450 px)</span></label>
+          <input type="range" class="range-slider" id="sliderKnotX" min="240" max="660" step="5" value="450">
+          <span style="font-size: 0.72rem; color: var(--muted);">Slide left/right to change horizontal balance</span>
+        </div>
+
+        <!-- Knot Vertical Drop -->
+        <div class="sandbox-control-item">
+          <label>Knot Drop (<span class="math-expr">y</span>): <span id="valKnotY" style="color: var(--primary-teal); font-weight: 700;">310 px</span></label>
+          <input type="range" class="range-slider" id="sliderKnotY" min="200" max="430" step="5" value="310">
+          <span style="font-size: 0.72rem; color: var(--muted);">Lower drop increases angle &amp; decreases tension</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Layout Grid -->
+    <main class="main-grid">
+      
+      <!-- LEFT COLUMN: Physical Apparatus Canvas & Controls -->
+      <section class="panel" aria-label="Physical Statics Apparatus">
+        <div class="panel-header">
+          <h2 class="panel-title">
+            <span>⚖️</span> Laboratory Statics Apparatus
+          </h2>
+          <span style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">
+            Concurrent 3-Force Statics Rig
+          </span>
+        </div>
+
+        <!-- Apparatus Canvas Wrapper -->
+        <div class="canvas-card apparatus-canvas-wrapper">
+          <canvas id="apparatusCanvas"></canvas>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+          <div class="playback-buttons">
+            <button class="btn btn-ghost active" id="btnToggleProtractor" title="Show or hide interactive protractor">
+              📐 Protractor
+            </button>
+            <button class="btn btn-ghost" id="btnSnapProtractor" title="Snap protractor center to knot">
+              🎯 Snap to Knot
+            </button>
+            <button class="btn btn-ghost" id="btnToggleRuler" title="Toggle metric ruler">
+              📏 Ruler
+            </button>
+            <button class="btn btn-ghost" id="btnReset" title="Reset setup">
+              ↺ Reset
+            </button>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <button class="btn btn-accent" id="btnRecordTrial">
+              📋 Log Current Trial
+            </button>
+          </div>
+        </div>
+
+        <!-- Toggles Row -->
+        <div class="toggles-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="chkVectors" checked>
+            <span>Vectors (<span style="color: var(--primary-teal); font-weight: 700;">T₁</span> &amp; <span style="color: var(--accent-amber); font-weight: 700;">T₂</span> &amp; <span style="color: var(--error); font-weight: 700;">Fg</span>)</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="chkAngles" checked>
+            <span>Angle Arcs (θ₁, θ₂)</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="chkComponents">
+            <span>Component Lines</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="chkLevel" checked>
+            <span>Level Lines</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="chkDials" checked>
+            <span>Digital Force Badges</span>
+          </label>
+        </div>
+
+        <!-- Live Telemetry Ribbon -->
+        <div class="telemetry-ribbon">
+          <div class="telemetry-card">
+            <div class="telemetry-label">Scale 1 (Left T₁)</div>
+            <div class="telemetry-val teal" id="telemT1">2.83 N</div>
+          </div>
+          <div class="telemetry-card">
+            <div class="telemetry-label">Scale 2 (Right T₂)</div>
+            <div class="telemetry-val amber" id="telemT2">2.83 N</div>
+          </div>
+          <div class="telemetry-card">
+            <div class="telemetry-label">Left Angle (θ₁)</div>
+            <div class="telemetry-val" id="telemAngle1">30.0°</div>
+          </div>
+          <div class="telemetry-card">
+            <div class="telemetry-label">Right Angle (θ₂)</div>
+            <div class="telemetry-val" id="telemAngle2">30.0°</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: Modeling Analysis, FBD, Closed Polygon, Mystery Mass & Data Logger -->
+      <section class="panel" aria-label="Modeling Analysis & Data Management">
+        
+        <!-- Mystery Mass Box (Shows in Mystery Scenario or Tab) -->
+        <div class="mystery-container" id="mysteryBox" style="display: none;">
+          <div class="mystery-header">
+            <span>🎯</span> Mystery Mass Challenge
+          </div>
+          <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 0.6rem;">
+            Read the two spring scales and measure the cord angles with the virtual protractor. Calculate the unknown mass in grams:
+          </p>
+          <div class="mystery-chips">
+            <button class="mystery-chip active" data-mystery="A">Mass A</button>
+            <button class="mystery-chip" data-mystery="B">Mass B</button>
+            <button class="mystery-chip" data-mystery="C">Mass C</button>
+            <button class="mystery-chip" data-mystery="D">Mass D</button>
+          </div>
+          <div class="mystery-form">
+            <input type="number" class="styled-input" id="studentMassInput" placeholder="Enter calculated mass (g)..." step="1">
+            <button class="btn btn-accent" id="btnCheckMystery">Check Mass</button>
+          </div>
+          <div class="feedback-box" id="mysteryFeedback"></div>
+        </div>
+
+        <!-- Analysis Tabs Header -->
+        <div class="analysis-tabs" role="tablist">
+          <button class="analysis-tab-btn active" data-tab="tab-fbd">Force Diagram (FBD)</button>
+          <button class="analysis-tab-btn" data-tab="tab-polygon">Vector Triangle</button>
+          <button class="analysis-tab-btn" data-tab="tab-data">Data Table</button>
+          <button class="analysis-tab-btn" data-tab="tab-calc">Calculation Workbench</button>
+        </div>
+
+        <!-- TAB 1: Free Body Diagram -->
+        <div class="analysis-tab-pane active" id="tab-fbd">
+          <div class="canvas-card fbd-canvas-wrapper">
+            <canvas id="fbdCanvas"></canvas>
+          </div>
+          <div class="math-card">
+            <h4>2D Statics Equilibrium Model</h4>
+            <p><strong>ΣF<sub>x</sub> = T<sub>2</sub>·cos(θ₂) - T<sub>1</sub>·cos(θ₁) = 0</strong></p>
+            <p><strong>ΣF<sub>y</sub> = T<sub>1</sub>·sin(θ₁) + T<sub>2</sub>·sin(θ₂) - F<sub>g</sub> = 0</strong></p>
+            <p style="margin-top: 0.35rem; color: var(--muted);">
+              The sum of upward vertical components supports the entire downward weight <code>F<sub>g</sub> = m·g</code>.
+            </p>
+          </div>
+        </div>
+
+        <!-- TAB 2: Closed Vector Polygon -->
+        <div class="analysis-tab-pane" id="tab-polygon">
+          <div class="canvas-card poly-canvas-wrapper">
+            <canvas id="polyCanvas"></canvas>
+          </div>
+          <div class="math-card">
+            <h4>Closed Vector Polygon (Tip-to-Tail)</h4>
+            <p><strong>ΣF&#x20D7; = T&#x20D7;₁ + T&#x20D7;₂ + F&#x20D7;<sub>g</sub> = 0&#x20D7;</strong></p>
+            <p style="margin-top: 0.35rem; color: var(--muted);">
+              Because the object is stationary, adding the force vectors tip-to-tail forms a closed triangle returning to the origin.
+            </p>
+          </div>
+        </div>
+
+        <!-- TAB 3: Data Table -->
+        <div class="analysis-tab-pane" id="tab-data">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <div style="display: flex; gap: 0.4rem;">
+              <button class="btn btn-sm btn-ghost" id="btnExportCSV">📥 Export CSV</button>
+              <button class="btn btn-sm btn-ghost" id="btnCopyData">📋 Copy</button>
+            </div>
+            <button class="btn btn-sm btn-ghost" id="btnClearTable" style="color: var(--error);">Clear</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Mass</th>
+                  <th>θ₁ (°)</th>
+                  <th>θ₂ (°)</th>
+                  <th>T₁ (N)</th>
+                  <th>T₂ (N)</th>
+                  <th>T₁x (N)</th>
+                  <th>T₂x (N)</th>
+                  <th>ΣFy (N)</th>
+                  <th>Calc Mass</th>
+                </tr>
+              </thead>
+              <tbody id="trialsTableBody">
+                <tr>
+                  <td colspan="10" style="text-align: center; color: var(--muted); padding: 1rem;">
+                    No trials recorded yet. Click "Log Current Trial" to record.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 4: Calculation Workbench -->
+        <div class="analysis-tab-pane" id="tab-calc">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.6rem;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--muted);">Tension T₁ (N):</label>
+              <input type="number" class="styled-input" id="wbT1" placeholder="e.g. 2.83" step="0.01">
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--muted);">Tension T₂ (N):</label>
+              <input type="number" class="styled-input" id="wbT2" placeholder="e.g. 2.83" step="0.01">
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--muted);">Angle θ₁ (deg):</label>
+              <input type="number" class="styled-input" id="wbTheta1" placeholder="e.g. 30.0" step="0.1">
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--muted);">Angle θ₂ (deg):</label>
+              <input type="number" class="styled-input" id="wbTheta2" placeholder="e.g. 30.0" step="0.1">
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btnSolveWorkbench" style="width: 100%;">
+            Calculate Hanging Mass &amp; Check Balance
+          </button>
+          <div id="workbenchResults"></div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Footer matching Hub Standard -->
+    <footer class="app-footer">
+      <p>
+        <strong>The Thinking Experiment</strong> &bull; Interactive Physics Simulations &bull; Balanced Force Model
+      </p>
+    </footer>
+  </div>
+
+  <!-- Script Modules -->
+  <script type="module" src="src/balancedForcesApp.js"></script>
+</body>
+</html>
