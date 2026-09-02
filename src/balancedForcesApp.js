@@ -75,9 +75,15 @@
         valLen2: document.getElementById('valLen2'),
         meterLen1: document.getElementById('meterLen1'),
         meterLen2: document.getElementById('meterLen2'),
+        sliderKnotX: document.getElementById('sliderKnotX'),
+        valKnotX: document.getElementById('valKnotX'),
+        valKnotY: document.getElementById('valKnotY'),
+        valLenTotal: document.getElementById('valLenTotal'),
+        meterLenTotal: document.getElementById('meterLenTotal'),
         telemT1: document.getElementById('telemT1'),
         telemT2: document.getElementById('telemT2'),
         telemKnotPos: document.getElementById('telemKnotPos'),
+        telemState: document.getElementById('telemState'),
         studentMassInput: document.getElementById('studentMassInput'),
         btnCheckMystery: document.getElementById('btnCheckMystery'),
         mysteryFeedback: document.getElementById('mysteryFeedback'),
@@ -127,9 +133,10 @@
         // Mode: Ideal Scenario (Default) vs. Real Lab Mode (Elastic Stretch & Uncertainty)
         isRealLabMode: false,
 
-        // Normalized knot position [0..1, 0..1] relative to apparatus canvas
+        // Normalized knot horizontal position [0..1] relative to apparatus canvas
         normKnotX: 0.50,
-        normKnotY: 0.58,
+        normKnotY: 0.58, // Strictly calculated from equilibrium string constraint!
+        bobbingOffset: 0, // Dynamic harmonic oscillation when settling into equilibrium
 
         // Protractor Tool
         protractor: {
@@ -221,17 +228,6 @@
       return this.state.massKg;
     }
 
-    getEffectiveKnotY() {
-      if (!this.state.isRealLabMode) {
-        return this.state.normKnotY;
-      }
-      // Real Lab Mode: Springs stretch under load (Hooke's Law: Delta L = T / k)
-      // Heavier mass drops the knot lower; lighter mass raises the knot
-      const massKg = this.getActiveMassKg();
-      const springSag = (massKg - 0.500) * 0.08;
-      return Math.max(0.36, Math.min(0.74, this.state.normKnotY + springSag));
-    }
-
     getApparatusCoords() {
       const canvas = this.dom.apparatusCanvas;
       const dpr = window.devicePixelRatio || 1;
@@ -240,10 +236,81 @@
 
       const s1 = { x: w * 0.20, y: h * 0.24 };
       const s2 = { x: w * 0.80, y: h * 0.24 };
-      const effY = this.getEffectiveKnotY();
-      const p = { x: w * this.state.normKnotX, y: h * effY };
+      const D = s2.x - s1.x;
 
-      return { w, h, s1, s2, p, dpr };
+      // Base string length: in symmetric center (x = 0.50, y = 0.58), drop = h * 0.34
+      const baseStringLength = 2 * Math.hypot(D / 2, h * 0.34);
+
+      // In Real Lab Mode: Springs stretch under load (Hooke's Law: Delta L = T / k)
+      let effectiveTotalLength = baseStringLength;
+      if (this.state.isRealLabMode) {
+        const massKg = this.getActiveMassKg();
+        const springStretch = (massKg - 0.500) * (h * 0.09);
+        effectiveTotalLength += springStretch;
+      }
+
+      // Knot horizontal position: freely controlled by user [0.28 .. 0.72]
+      const knotX = w * this.state.normKnotX;
+
+      // Knot vertical position: strictly constrained by string equilibrium L1 + L2 = effectiveTotalLength
+      const eqGeom = BalancedForcesPhysics.calculateEquilibriumY(knotX, s1, s2, effectiveTotalLength);
+
+      const bobbing = this.state.bobbingOffset || 0;
+      const knotY = eqGeom.y + bobbing;
+
+      // Update state normKnotY to stay strictly synchronized with equilibrium
+      this.state.normKnotY = eqGeom.y / h;
+
+      const p = { x: knotX, y: knotY };
+
+      return {
+        w,
+        h,
+        s1,
+        s2,
+        p,
+        dpr,
+        totalStringLength: effectiveTotalLength,
+        baseStringLength,
+        eqGeom
+      };
+    }
+
+    triggerEquilibriumSettling(initialAmp = 6) {
+      if (this.settlingAnimationId) {
+        cancelAnimationFrame(this.settlingAnimationId);
+        this.settlingAnimationId = null;
+      }
+
+      const startTime = performance.now();
+      const durationMs = 550;
+      const omega = 18;
+      const gamma = 5.5;
+
+      if (this.dom.telemState) {
+        this.dom.telemState.innerHTML = '<span style="color: var(--accent-amber);">⏳ Settling into Equilibrium...</span>';
+      }
+
+      const step = (now) => {
+        const t = (now - startTime) / 1000;
+        if (t >= durationMs / 1000) {
+          this.state.bobbingOffset = 0;
+          this.updateEquilibrium();
+          this.render();
+          if (this.dom.telemState) {
+            this.dom.telemState.innerHTML = '<span style="color: var(--success);">⚖️ Balanced at Equilibrium</span>';
+          }
+          this.settlingAnimationId = null;
+          return;
+        }
+
+        this.state.bobbingOffset = initialAmp * Math.exp(-gamma * t) * Math.cos(omega * t);
+        this.updateEquilibrium();
+        this.render();
+        this.settlingAnimationId = requestAnimationFrame(step);
+      };
+
+      this.settlingAnimationId = requestAnimationFrame(step);
     }
 
     updateEquilibrium() {
@@ -275,8 +342,26 @@
         if (this.dom.telemT1) this.dom.telemT1.textContent = `${eq.t1.toFixed(2)} N`;
         if (this.dom.telemT2) this.dom.telemT2.textContent = `${eq.t2.toFixed(2)} N`;
       }
+
+      // Knot Horizontal Position & Equilibrium Height
+      const knotXPct = Math.round(this.state.normKnotX * 100);
+      const knotYPct = Math.round(this.state.normKnotY * 100);
+
+      if (this.dom.valKnotX) {
+        let align = 'Center';
+        if (knotXPct < 48) align = 'Left';
+        else if (knotXPct > 52) align = 'Right';
+        this.dom.valKnotX.textContent = `${knotXPct}% (${align})`;
+      }
+      if (this.dom.sliderKnotX && document.activeElement !== this.dom.sliderKnotX) {
+        this.dom.sliderKnotX.value = (this.state.normKnotX * 100).toFixed(1);
+      }
+      if (this.dom.valKnotY) {
+        this.dom.valKnotY.textContent = `${knotYPct}% (Auto)`;
+      }
+
       if (this.dom.telemKnotPos) {
-        this.dom.telemKnotPos.textContent = `(${Math.round(this.state.normKnotX * 100)}%, ${Math.round(this.state.normKnotY * 100)}%)`;
+        this.dom.telemKnotPos.textContent = `(${knotXPct}%, ${knotYPct}%)`;
       }
 
       if (this.dom.valMass) {
@@ -288,20 +373,18 @@
         }
       }
 
-      // Cord Lengths in cm (calibrated to the 3.5 px/mm = 35 px/cm metric ruler)
+      // Total String Length & Individual Cord Lengths (35 px = 1 cm)
       const len1Cm = (eq.geometry.len1 / 35).toFixed(1);
       const len2Cm = (eq.geometry.len2 / 35).toFixed(1);
+      const lenTotalCm = ((eq.geometry.len1 + eq.geometry.len2) / 35).toFixed(1);
 
       if (this.dom.valLen1) this.dom.valLen1.textContent = `${len1Cm} cm`;
       if (this.dom.valLen2) this.dom.valLen2.textContent = `${len2Cm} cm`;
-
-      if (this.dom.meterLen1) {
-        const pct1 = Math.max(15, Math.min(95, (parseFloat(len1Cm) / 75) * 100));
-        this.dom.meterLen1.style.width = `${pct1}%`;
+      if (this.dom.valLenTotal) {
+        this.dom.valLenTotal.textContent = `${lenTotalCm} cm (${this.state.isRealLabMode ? 'Elastic' : 'Constant'})`;
       }
-      if (this.dom.meterLen2) {
-        const pct2 = Math.max(15, Math.min(95, (parseFloat(len2Cm) / 75) * 100));
-        this.dom.meterLen2.style.width = `${pct2}%`;
+      if (this.dom.meterLenTotal) {
+        this.dom.meterLenTotal.style.width = '100%';
       }
     }
 
@@ -361,6 +444,25 @@
           this.updateEquilibrium();
           this.render();
         });
+        this.dom.sliderMass.addEventListener('change', () => {
+          this.triggerEquilibriumSettling(6);
+        });
+      }
+
+      // Knot Horizontal Position (X) Slider
+      if (this.dom.sliderKnotX) {
+        this.dom.sliderKnotX.addEventListener('input', (e) => {
+          this.state.normKnotX = parseFloat(e.target.value) / 100;
+          this.updateEquilibrium();
+          if (this.state.protractor.isSnapped) {
+            this.state.protractor.normX = this.state.normKnotX;
+            this.state.protractor.normY = this.state.normKnotY;
+          }
+          this.render();
+        });
+        this.dom.sliderKnotX.addEventListener('change', () => {
+          this.triggerEquilibriumSettling(4);
+        });
       }
 
       // Preset Chips
@@ -371,10 +473,10 @@
           if (this.dom.sliderMass) this.dom.sliderMass.value = massG;
           this.updateMassPresetChips();
           this.updateEquilibrium();
+          this.triggerEquilibriumSettling(6);
           this.render();
         });
       });
-
 
       // Mystery Chips
       document.querySelectorAll('.mystery-chip').forEach(chip => {
@@ -384,6 +486,7 @@
           this.state.currentMystery = chip.dataset.mystery;
           if (this.dom.mysteryFeedback) this.dom.mysteryFeedback.className = 'feedback-box';
           this.updateEquilibrium();
+          this.triggerEquilibriumSettling(6);
           this.render();
         });
       });
@@ -1220,7 +1323,8 @@
         // Check Knot
         if (Math.hypot(x - knotX, y - knotY) < 28) {
           this.state.dragTarget = 'knot';
-          this.state.dragOffset = { x: x - knotX, y: y - knotY };
+          this.state.dragOffset = { x: x - knotX, y: 0 };
+          this.state.bobbingOffset = 0;
           e.preventDefault();
           return;
         }
@@ -1247,25 +1351,21 @@
         if (!this.state.dragTarget) {
           const distToKnot = Math.hypot(x - knotX, y - knotY);
           this.state.isHoveringKnot = distToKnot < 28;
-          canvas.style.cursor = this.state.isHoveringKnot ? 'grab' : 'crosshair';
+          canvas.style.cursor = this.state.isHoveringKnot ? 'ew-resize' : 'crosshair';
           return;
         }
 
-        canvas.style.cursor = 'grabbing';
-
         if (this.state.dragTarget === 'knot') {
+          canvas.style.cursor = 'ew-resize';
           const newX = Math.max(w * 0.28, Math.min(w * 0.72, x - this.state.dragOffset.x));
-          const newY = Math.max(h * 0.38, Math.min(h * 0.76, y - this.state.dragOffset.y));
-
           this.state.normKnotX = newX / w;
-          this.state.normKnotY = newY / h;
+          // Height (normKnotY) is NOT set from mouse Y! It is strictly locked to string equilibrium
 
+          this.updateEquilibrium();
           if (this.state.protractor.isSnapped) {
             this.state.protractor.normX = this.state.normKnotX;
             this.state.protractor.normY = this.state.normKnotY;
           }
-
-          this.updateEquilibrium();
           this.render();
         } else if (this.state.dragTarget === 'protractor') {
           const newX = x - this.state.dragOffset.x;
@@ -1297,6 +1397,9 @@
       };
 
       const handleUp = () => {
+        if (this.state.dragTarget === 'knot') {
+          this.triggerEquilibriumSettling(4);
+        }
         this.state.dragTarget = null;
         canvas.style.cursor = 'crosshair';
       };
@@ -1859,15 +1962,29 @@
       ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
       ctx.fill();
 
+      // Horizontal Drag Guide when active
+      if (this.state.dragTarget === 'knot') {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(214, 123, 25, 0.75)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(p.x - 36, p.y);
+        ctx.lineTo(p.x + 36, p.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       // Drag Hint Tooltip when hovering
       if (this.state.isHoveringKnot && !this.state.dragTarget) {
-        ctx.fillStyle = 'rgba(18, 49, 64, 0.88)';
-        drawRoundedRect(ctx, p.x - 36, p.y - 32, 72, 18, 3, true, false);
+        ctx.fillStyle = 'rgba(18, 49, 64, 0.90)';
+        const tipW = 118;
+        drawRoundedRect(ctx, p.x - tipW / 2, p.y - 32, tipW, 18, 3, true, false);
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 9px Inter, sans-serif';
+        ctx.font = 'bold 8.5px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('✥ Drag Knot', p.x, p.y - 23);
+        ctx.fillText('↔ Drag X (Height Locked)', p.x, p.y - 23);
       }
 
       ctx.restore();

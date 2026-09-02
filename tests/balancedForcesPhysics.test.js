@@ -56,4 +56,26 @@ describe('Balanced Forces Physics Engine Tests', () => {
     assert.strictEqual(evalExcellent.status, 'excellent');
   });
 
+  test('Equilibrium Knot Y from Constant Total String Length L = L1 + L2', () => {
+    const s1 = { x: 100, y: 150 };
+    const s2 = { x: 700, y: 150 };
+    const totalLength = 750;
+
+    // Symmetric center (x = 400)
+    const eqCenter = BalancedForcesPhysics.calculateEquilibriumY(400, s1, s2, totalLength);
+    assert.ok(Math.abs(eqCenter.totalLength - totalLength) < 1e-4);
+    assert.ok(Math.abs(eqCenter.len1 - eqCenter.len2) < 1e-4);
+    assert.ok(eqCenter.y > s1.y);
+
+    // Asymmetric positions (x = 250 and x = 550)
+    const eqLeft = BalancedForcesPhysics.calculateEquilibriumY(250, s1, s2, totalLength);
+    assert.ok(Math.abs(eqLeft.totalLength - totalLength) < 1e-4);
+    assert.ok(eqLeft.len1 < eqLeft.len2);
+
+    const eqRight = BalancedForcesPhysics.calculateEquilibriumY(550, s1, s2, totalLength);
+    assert.ok(Math.abs(eqRight.totalLength - totalLength) < 1e-4);
+    assert.ok(eqRight.len1 > eqRight.len2);
+    assert.ok(Math.abs(eqLeft.y - eqRight.y) < 1e-4); // Symmetry about center
+  });
+
 });

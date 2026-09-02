@@ -104,22 +104,24 @@
           </div>
         </div>
 
-        <!-- Left Cord Length (L1) Readout -->
-        <div class="sandbox-control-item">
-          <label>Left Cord Length (<span class="math-expr">L₁</span>): <strong id="valLen1" style="color: var(--primary-teal-dark);">-- cm</strong></label>
-          <div class="readout-meter">
-            <div class="readout-meter-fill teal" id="meterLen1" style="width: 50%;"></div>
-          </div>
-          <span style="font-size: 0.72rem; color: var(--muted);">Clamp 1 to knot distance &bull; Drag knot to adjust</span>
+        <!-- Knot Horizontal Position (X) Control -->
+        <div class="sandbox-control-item" id="knotXControlItem">
+          <label for="sliderKnotX">Knot Horizontal Position (<span class="math-expr">X</span>): <strong id="valKnotX" style="color: var(--primary-teal-dark);">50% (Center)</strong></label>
+          <input type="range" class="range-slider" id="sliderKnotX" min="28" max="72" step="0.5" value="50">
+          <span style="font-size: 0.72rem; color: var(--muted);">↔ Slide or drag knot &bull; Height (Y) set by equilibrium</span>
         </div>
 
-        <!-- Right Cord Length (L2) Readout -->
-        <div class="sandbox-control-item">
-          <label>Right Cord Length (<span class="math-expr">L₂</span>): <strong id="valLen2" style="color: var(--accent-amber-dark);">-- cm</strong></label>
+        <!-- Constant String Length & Equilibrium Geometry -->
+        <div class="sandbox-control-item" id="stringLengthControlItem">
+          <label>Total String Length (<span class="math-expr">L₁ + L₂</span>): <strong id="valLenTotal" style="color: var(--primary-teal-dark);">14.1 cm (Constant)</strong></label>
           <div class="readout-meter">
-            <div class="readout-meter-fill amber" id="meterLen2" style="width: 50%;"></div>
+            <div class="readout-meter-fill teal" id="meterLenTotal" style="width: 100%;"></div>
           </div>
-          <span style="font-size: 0.72rem; color: var(--muted);">Clamp 2 to knot distance &bull; Drag knot to adjust</span>
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; font-weight: 600; margin-top: 4px;">
+            <span style="color: var(--primary-teal-dark);">L₁: <strong id="valLen1">7.0 cm</strong></span>
+            <span style="color: var(--muted);">Height (Y): <strong id="valKnotY">58% (Auto)</strong></span>
+            <span style="color: var(--accent-amber-dark);">L₂: <strong id="valLen2">7.0 cm</strong></span>
+          </div>
         </div>
       </div>
     </section>
@@ -202,7 +204,7 @@
           </div>
           <div class="telemetry-card">
             <div class="telemetry-label">System State</div>
-            <div class="telemetry-val" style="font-size: 0.95rem; color: var(--success);">⚖️ Balanced (At Rest)</div>
+            <div class="telemetry-val" id="telemState" style="font-size: 0.95rem; color: var(--success);">⚖️ Balanced (At Rest)</div>
           </div>
         </div>
       </section>

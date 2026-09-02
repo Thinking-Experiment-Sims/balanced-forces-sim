@@ -53,6 +53,40 @@ var BalancedForcesPhysics = class BalancedForcesPhysics {
   }
 
   /**
+   * Calculates the exact equilibrium vertical position (y) of the knot
+   * given the horizontal position (x) and constant total string length L_total.
+   * Based on the geometric locus of taut suspension: L1 + L2 = L_total (constant).
+   * 
+   * @param {number} knotX - Horizontal position of knot
+   * @param {Object} s1 - Left support anchor position { x, y }
+   * @param {Object} s2 - Right support anchor position { x, y }
+   * @param {number} totalLength - Constant total length of the string (L1 + L2)
+   * @returns {Object} { y, deltaY, len1, len2, totalLength }
+   */
+  static calculateEquilibriumY(knotX, s1, s2, totalLength) {
+    const d1 = Math.abs(knotX - s1.x);
+    const d2 = Math.abs(s2.x - knotX);
+    const D = Math.abs(s2.x - s1.x);
+    const y0 = (s1.y + s2.y) / 2;
+
+    const effectiveL = Math.max(totalLength, D + 1e-4);
+    const A = (effectiveL * effectiveL + d1 * d1 - d2 * d2) / (2 * effectiveL);
+    const deltaY = Math.sqrt(Math.max(0, A * A - d1 * d1));
+    const y = y0 + deltaY;
+
+    const len1 = Math.hypot(d1, deltaY);
+    const len2 = Math.hypot(d2, deltaY);
+
+    return {
+      y,
+      deltaY,
+      len1,
+      len2,
+      totalLength: len1 + len2
+    };
+  }
+
+  /**
    * Calculates analytical tension forces T1, T2 and gravity force Fg in static equilibrium.
    * 
    * Equilibrium conditions:
