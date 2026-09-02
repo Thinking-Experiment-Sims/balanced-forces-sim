@@ -144,7 +144,7 @@
           normX: 0.50,
           normY: 0.58,
           rotationDeg: 0,
-          radius: 115,
+          radius: 122,
           isSnapped: true
         },
 
@@ -2087,7 +2087,7 @@
       const r = this.state.protractor.radius;
 
       // Semi-transparent Acrylic Body (180 deg)
-      ctx.fillStyle = 'rgba(224, 242, 247, 0.78)';
+      ctx.fillStyle = 'rgba(224, 242, 247, 0.82)';
       ctx.strokeStyle = '#0f7e9b';
       ctx.lineWidth = 2;
 
@@ -2097,63 +2097,114 @@
       ctx.fill();
       ctx.stroke();
 
-      // Inner Cutout
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      // Dividing Arc separating Outer Scale and Inner Scale
+      ctx.strokeStyle = 'rgba(15, 126, 155, 0.45)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(0, 0, r * 0.45, Math.PI, 0, false);
+      ctx.arc(0, 0, r - 25, Math.PI, 0, false);
+      ctx.stroke();
+
+      // Inner Cutout
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+      ctx.strokeStyle = '#0f7e9b';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.40, Math.PI, 0, false);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      // Crosshairs Center
+      // Origin Baseline (Horizontal Alignment Line)
+      ctx.strokeStyle = 'rgba(15, 126, 155, 0.6)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-r, 0);
+      ctx.lineTo(r, 0);
+      ctx.stroke();
+
+      // Center Origin Crosshairs & Sighting Ring
       ctx.strokeStyle = '#d67b19';
       ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.moveTo(-14, 0);
-      ctx.lineTo(14, 0);
-      ctx.moveTo(0, -14);
-      ctx.lineTo(0, 14);
+      ctx.moveTo(-16, 0);
+      ctx.lineTo(16, 0);
+      ctx.moveTo(0, -16);
+      ctx.lineTo(0, 16);
       ctx.stroke();
 
       ctx.beginPath();
       ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Graduated Degree Ticks (0° to 180°)
-      ctx.fillStyle = '#0a576b';
-      ctx.strokeStyle = '#0f7e9b';
-      ctx.font = '8px Inter, sans-serif';
+      // Graduated Degree Ticks & Numbers (Dual Scale: Outer & Inner)
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
       for (let deg = 0; deg <= 180; deg += 1) {
         const rad = Math.PI - (deg * Math.PI) / 180;
-        let tickLen = 4;
 
-        if (deg % 10 === 0) {
-          tickLen = 11;
-        } else if (deg % 5 === 0) {
-          tickLen = 7;
-        }
+        // Outer rim ticks (every 1°, 5°, 10°)
+        let outerTickLen = 3.5;
+        if (deg % 10 === 0) outerTickLen = 10;
+        else if (deg % 5 === 0) outerTickLen = 6.5;
 
-        const x1 = (r - 2) * Math.cos(rad);
-        const y1 = -(r - 2) * Math.sin(rad);
-        const x2 = (r - 2 - tickLen) * Math.cos(rad);
-        const y2 = -(r - 2 - tickLen) * Math.sin(rad);
+        const ox1 = (r - 2) * Math.cos(rad);
+        const oy1 = -(r - 2) * Math.sin(rad);
+        const ox2 = (r - 2 - outerTickLen) * Math.cos(rad);
+        const oy2 = -(r - 2 - outerTickLen) * Math.sin(rad);
 
-        ctx.lineWidth = (deg % 10 === 0) ? 1.4 : 0.7;
+        ctx.strokeStyle = '#0f7e9b';
+        ctx.lineWidth = (deg % 10 === 0) ? 1.3 : 0.65;
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
+        ctx.moveTo(ox1, oy1);
+        ctx.lineTo(ox2, oy2);
         ctx.stroke();
 
+        // Inner scale ticks extending inward from dividing arc
+        if (deg % 5 === 0) {
+          const innerTickLen = (deg % 10 === 0) ? 6 : 4;
+          const inR1 = r - 25;
+          const inR2 = r - 25 - innerTickLen;
+          const ix1 = inR1 * Math.cos(rad);
+          const iy1 = -inR1 * Math.sin(rad);
+          const ix2 = inR2 * Math.cos(rad);
+          const iy2 = -inR2 * Math.sin(rad);
+
+          ctx.strokeStyle = (deg % 10 === 0) ? '#d67b19' : 'rgba(214, 123, 25, 0.6)';
+          ctx.lineWidth = (deg % 10 === 0) ? 1.1 : 0.65;
+          ctx.beginPath();
+          ctx.moveTo(ix1, iy1);
+          ctx.lineTo(ix2, iy2);
+          ctx.stroke();
+        }
+
+        // Dual Degree Numbers every 10°
         if (deg % 10 === 0) {
-          const textR = r - 18;
-          const tx = textR * Math.cos(rad);
-          const ty = -textR * Math.sin(rad);
-          ctx.fillText(deg.toString(), tx, ty);
+          // 1. Outer Scale: 0° to 180° Left-to-Right (Teal)
+          const outTextR = r - 16;
+          const otx = outTextR * Math.cos(rad);
+          const oty = -outTextR * Math.sin(rad);
+          ctx.fillStyle = '#0a576b';
+          ctx.font = 'bold 7px Inter, sans-serif';
+          ctx.fillText(deg.toString(), otx, oty);
+
+          // 2. Inner Scale: 0° to 180° Right-to-Left (Amber)
+          const inTextR = r - 36;
+          const itx = inTextR * Math.cos(rad);
+          const ity = -inTextR * Math.sin(rad);
+          const innerDeg = 180 - deg;
+          ctx.fillStyle = '#d67b19';
+          ctx.font = 'bold 6.5px Inter, sans-serif';
+          ctx.fillText(innerDeg.toString(), itx, ity);
         }
       }
+
+      // Small scale labels near 90° for quick reference
+      ctx.fillStyle = '#0a576b';
+      ctx.font = 'bold 6px Inter, sans-serif';
+      ctx.fillText('OUTER', 0, -r + 21);
+      ctx.fillStyle = '#d67b19';
+      ctx.fillText('INNER', 0, -r + 43);
 
       // Rotation Drag Handle
       const rotX = r + 18;
@@ -2168,9 +2219,9 @@
 
       // Tool Label
       ctx.fillStyle = '#0f7e9b';
-      drawRoundedRect(ctx, -38, -r - 18, 76, 16, 3, true, false);
+      drawRoundedRect(ctx, -40, -r - 18, 80, 16, 3, true, false);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 9px Inter, sans-serif';
+      ctx.font = 'bold 8.5px Inter, sans-serif';
       ctx.fillText('PROTRACTOR', 0, -r - 10);
 
       ctx.restore();
