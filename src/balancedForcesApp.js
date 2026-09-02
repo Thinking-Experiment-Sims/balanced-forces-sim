@@ -413,7 +413,7 @@
           const pane = document.getElementById(targetId);
           if (pane) pane.classList.add('active');
           this.resizeCanvases();
-          this.renderAnalysisCanvases();
+          this.render();
         });
       });
 
