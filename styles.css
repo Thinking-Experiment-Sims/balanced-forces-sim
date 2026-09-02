@@ -88,34 +88,26 @@ body {
   padding-top: 1rem;
 }
 
-/* Header matching Hub Card Hero */
-.hero {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 1.2rem 1.4rem;
-  background: linear-gradient(160deg, #ffffff, #f7fbfd);
-  box-shadow: var(--shadow-lg);
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 1rem;
-}
-
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 12px;
-  background: var(--primary-teal);
-  border-radius: 14px 0 0 14px;
-}
-
-.hero-top {
+/* Compact App Header */
+.app-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
-  padding-left: 0.4rem;
+  gap: 0.75rem;
+  padding: 0.6rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 0.6rem;
+}
+
+.header-branding {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
 }
 
 .brand-badge {
@@ -129,60 +121,117 @@ body {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 0.25rem;
 }
 
-.hero h1 {
-  font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+.header-title-group h1 {
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--ink);
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  margin-top: 0.2rem;
-}
-
-.hero-subtitle {
-  color: var(--muted);
-  font-size: 0.92rem;
-  margin-top: 0.25rem;
-  max-width: 90ch;
-}
-
-.hero-meta-badges {
+  margin: 0;
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
   align-items: center;
+  gap: 0.4rem;
 }
 
-/* Scenario Selector Nav Tabs */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+/* Compact Mode Switcher Pill */
+.mode-switcher-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface-alt);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--primary-teal-border);
+  transition: all 0.2s ease;
+}
+
+.mode-switcher-pill.real-mode {
+  border-color: var(--accent-amber);
+  background: #fdfaf6;
+  box-shadow: 0 2px 8px rgba(214, 123, 25, 0.12);
+}
+
+.mode-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.mode-toggle-label input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent-amber);
+  cursor: pointer;
+}
+
+/* Scenario & Guidance Strip */
+.scenario-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
 .scenario-nav {
   display: flex;
   gap: 0.4rem;
   overflow-x: auto;
-  padding: 0.4rem;
+  padding: 0.35rem;
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-  margin-bottom: 1rem;
   scrollbar-width: thin;
 }
 
 .scenario-tab {
   flex: 1;
-  min-width: 165px;
+  min-width: 140px;
   background: transparent;
   border: 1px solid transparent;
   color: var(--muted);
-  padding: 0.6rem 0.8rem;
+  padding: 0.45rem 0.7rem;
   border-radius: var(--radius-sm);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  text-align: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.scenario-meta-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: rgba(15, 126, 155, 0.04);
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--primary-teal);
+  font-size: 0.8rem;
+}
+
+.mode-explanation-strip {
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.35;
 }
 
 .scenario-tab:hover {
@@ -478,41 +527,46 @@ canvas {
 }
 
 /* Sandbox Settings Grid */
-.sandbox-settings {
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 1rem 1.2rem;
-  margin-bottom: 1rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.sandbox-controls-grid {
+/* Apparatus Setup Controls Strip (Docked directly above canvas) */
+.apparatus-controls-strip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-top: 0.6rem;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 0.75rem;
+  background: var(--surface-alt);
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 0.6rem;
 }
 
-@media (max-width: 800px) {
-  .sandbox-controls-grid {
+@media (max-width: 700px) {
+  .apparatus-controls-strip {
     grid-template-columns: 1fr;
   }
 }
 
-.sandbox-control-item {
+.control-box {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
-.sandbox-control-item label {
-  font-size: 0.84rem;
-  font-weight: 600;
+.control-header label {
+  font-size: 0.82rem;
+  font-weight: 700;
   color: var(--ink);
   display: flex;
+  justify-content: space-between;
   align-items: baseline;
-  gap: 0.35rem;
+}
+
+.geometry-status-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 2px;
 }
 
 .range-slider {
@@ -529,31 +583,6 @@ canvas {
   margin-top: 0.3rem;
 }
 
-/* Readout meter bar for cord lengths */
-.readout-meter {
-  width: 100%;
-  height: 8px;
-  background: var(--border-light);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-top: 0.25rem;
-  border: 1px solid var(--border);
-}
-
-.readout-meter-fill {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.08s ease;
-}
-
-.readout-meter-fill.teal {
-  background: linear-gradient(90deg, #095f76, var(--primary-teal));
-}
-
-.readout-meter-fill.amber {
-  background: linear-gradient(90deg, #b06210, var(--accent-amber));
-}
-
 .preset-chip {
   flex: 1;
   background: #e6f4f8;
@@ -561,7 +590,7 @@ canvas {
   color: var(--primary-teal-dark);
   font-size: 0.75rem;
   font-weight: 700;
-  padding: 0.25rem 0.2rem;
+  padding: 0.22rem 0.2rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   text-align: center;
@@ -578,81 +607,153 @@ canvas {
   border-color: var(--accent-amber-dark);
 }
 
-/* Simulation Mode Selector Card (Ideal vs. Real Lab Mode) */
-.mode-selector-card {
-  background: var(--surface);
-  border: 1.5px solid var(--primary-teal-border);
-  border-radius: var(--radius-md);
-  padding: 0.85rem 1.15rem;
-  margin-bottom: 1.1rem;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
-}
-
-.mode-selector-card.real-mode {
-  border-color: var(--accent-amber);
-  background: #fdfaf6;
-  box-shadow: 0 4px 14px rgba(214, 123, 25, 0.12);
-}
-
-.mode-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+/* Compact Controls Bar & Toggles */
+.compact-bar {
+  padding: 0.4rem 0.65rem;
   gap: 0.5rem;
-  margin-bottom: 0.45rem;
+  margin-top: 0.4rem;
 }
 
-.mode-checkbox-label {
+.compact-bar .btn-sm {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.76rem;
+}
+
+.inline-toggles-group {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.compact-toggle {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
   cursor: pointer;
   user-select: none;
 }
 
-.mode-checkbox-label input[type="checkbox"] {
-  width: 1.2rem;
-  height: 1.2rem;
-  accent-color: var(--accent-amber);
+.compact-toggle input[type="checkbox"] {
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: var(--primary-teal);
   cursor: pointer;
 }
 
-.mode-checkbox-title {
-  font-size: 0.94rem;
-  color: var(--ink);
+.compact-ribbon {
+  margin-top: 0.45rem;
+  gap: 0.45rem;
 }
 
-.mode-status-badge {
-  font-size: 0.76rem;
-  font-weight: 700;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  background: #e6f4f8;
-  color: var(--primary-teal-dark);
-  border: 1px solid var(--primary-teal-border);
+.compact-ribbon .telemetry-card {
+  padding: 0.35rem 0.65rem;
 }
 
-.mode-status-badge.real {
-  background: #fdf3e8;
-  color: var(--accent-amber-dark);
-  border-color: var(--accent-amber-border);
+.compact-ribbon .telemetry-label {
+  font-size: 0.68rem;
 }
 
-.mode-explanation {
+.compact-ribbon .telemetry-val {
+  font-size: 0.92rem;
+}
+
+/* Unified Interactive Force Component Table */
+.unified-force-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.unified-force-table th {
+  padding: 0.45rem 0.5rem;
   font-size: 0.8rem;
-  color: var(--muted);
-  line-height: 1.45;
-  background: rgba(15, 126, 155, 0.04);
-  padding: 0.55rem 0.8rem;
-  border-radius: var(--radius-sm);
-  border-left: 3px solid var(--primary-teal);
+  font-weight: 700;
+  border-bottom: 2px solid var(--border);
 }
 
-.mode-selector-card.real-mode .mode-explanation {
-  background: rgba(214, 123, 25, 0.06);
-  border-left-color: var(--accent-amber);
+.unified-force-table td {
+  padding: 0.45rem 0.4rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.force-cell {
+  background: rgba(248, 250, 252, 0.6);
+  text-align: center;
+}
+
+.force-title {
+  font-size: 0.86rem;
+  color: var(--ink);
+  margin-bottom: 0.2rem;
+}
+
+.inline-measure-group {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.measure-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.table-input {
+  width: 76px;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  text-align: center;
+  color: var(--ink);
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: var(--primary-teal);
+  box-shadow: 0 0 0 2px rgba(15, 126, 155, 0.15);
+}
+
+.comp-formula {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.comp-val {
+  font-size: 0.92rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.comp-val.teal {
+  color: var(--primary-teal);
+}
+
+.comp-val.amber {
+  color: var(--accent-amber);
+}
+
+.comp-val.red {
+  color: var(--error);
+}
+
+.table-sum-row {
+  background: #f0f7fa;
+  border-top: 2px solid var(--primary-teal-border);
 }
 
 /* Mystery Mass Challenge Container */

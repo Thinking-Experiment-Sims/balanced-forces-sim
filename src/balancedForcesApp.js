@@ -398,19 +398,23 @@
       }
       if (this.dom.modeBadge) {
         this.dom.modeBadge.classList.toggle('real', isReal);
-        this.dom.modeBadge.textContent = isReal ? 'Real Lab Mode (Active)' : 'Ideal Scenario (Default)';
+        this.dom.modeBadge.textContent = isReal ? '🔬 Real Lab Mode' : 'Ideal Scenario';
       }
       if (this.dom.modeDescText) {
         if (isReal) {
           this.dom.modeDescText.innerHTML = `
-            <strong>Real Lab Mode (Active):</strong> Internal springs in the scales stretch under load (ΔL = T/k), so hanging heavier masses causes the knot to visibly sag and cord angles to steepen. Digital values are replaced by analog spring scale readings; experimental uncertainty means your calculated horizontal components will satisfy ΣF<sub>x</sub> ≈ 0 N (close enough to zero, as in authentic lab experiments)!
+            <strong>Real Lab Mode (Active):</strong> Internal springs stretch under load (ΔL = T/k), causing knot sag and angle steepening. Enter your read forces (T₁, T₂) into the table; experimental uncertainty shows ΣF<sub>x</sub> ≈ 0 N (authentic scientific error)!
           `;
         } else {
           this.dom.modeDescText.innerHTML = `
-            <strong>Ideal Scenario (Active):</strong> Textbook model where strings are inextensible (angles stay constant when mass changes) and sensors provide exact digital values. The net horizontal force is theoretically ΣF<sub>x</sub> = 0 N.
+            <strong>Ideal Scenario:</strong> Textbook inextensible cords (ΣF<sub>x</sub> = 0 N). Toggle Real Lab Mode for spring stretch &amp; scale uncertainty.
           `;
         }
       }
+      const f1Wrap = document.getElementById('wbForce1Wrapper');
+      const f2Wrap = document.getElementById('wbForce2Wrapper');
+      if (f1Wrap) f1Wrap.style.display = isReal ? 'flex' : 'none';
+      if (f2Wrap) f2Wrap.style.display = isReal ? 'flex' : 'none';
       if (this.dom.realLabForceInputsRow) {
         this.dom.realLabForceInputsRow.style.display = isReal ? 'grid' : 'none';
       }
@@ -779,20 +783,19 @@
       ` : '';
 
       outDiv.innerHTML = `
-        <div class="math-card" style="margin-top: 0.8rem; background: #f8fafc; border-left: 4px solid var(--primary-teal);">
-          <h4 style="color: var(--primary-teal-dark);">Equilibrium Resolution Summary (${this.state.isRealLabMode ? 'Real Lab Mode' : 'Ideal Scenario'})</h4>
-          <p><strong>Horizontal Balance (ΣF<sub>x</sub> = 0):</strong><br>
-             T₁x = -${usedT1.toFixed(2)} · cos(${th1.toFixed(1)}°) = <strong>-${calc.t1x.toFixed(2)} N</strong><br>
-             T₂x = +${usedT2.toFixed(2)} · cos(${th2.toFixed(1)}°) = <strong>+${calc.t2x.toFixed(2)} N</strong><br>
-             Net Horizontal: <strong>ΣF<sub>x</sub> = ${netFxStr} N</strong></p>
+        <div class="math-card" style="margin-top: 0.6rem; padding: 0.65rem 0.85rem; background: #f8fafc; border-left: 4px solid var(--primary-teal);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.4rem;">
+            <strong style="color: var(--primary-teal-dark); font-size: 0.88rem;">Equilibrium Resolution Summary</strong>
+            <span class="meta-badge" style="background: #e6f4f8; color: var(--primary-teal-dark); font-weight: 700; font-size: 0.72rem;">${this.state.isRealLabMode ? '🔬 Real Lab Mode' : 'Ideal Scenario'}</span>
+          </div>
+          <div style="font-size: 0.8rem; line-height: 1.45; color: var(--ink);">
+            <div><strong>Horizontal Balance:</strong> ΣF<sub>x</sub> = ${calc.t2x.toFixed(2)} - ${calc.t1x.toFixed(2)} = <strong>${netFxStr} N</strong></div>
+            <div><strong>Vertical Support:</strong> F<sub>g</sub> = ${calc.t1y.toFixed(2)} + ${calc.t2y.toFixed(2)} = <strong>${calc.totalUpwardForce.toFixed(2)} N</strong></div>
+            <div style="margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px dashed var(--border); font-size: 0.88rem;">
+              <strong>Calculated Mass:</strong> <span style="color: var(--primary-teal-dark); font-weight: 700;">m = F<sub>g</sub> / g = ${calc.calculatedMassG.toFixed(1)} g</span> &bull; Error: <strong style="color: ${Math.abs(parseFloat(pErr)) <= 5 ? 'var(--success)' : 'var(--accent-amber)'};">${pErr}%</strong>
+            </div>
+          </div>
           ${uncertaintyNote}
-          <p style="margin-top: 0.4rem;"><strong>Vertical Balance (ΣF<sub>y</sub> = 0):</strong><br>
-             T₁y = ${usedT1.toFixed(2)} · sin(${th1.toFixed(1)}°) = <strong>${calc.t1y.toFixed(2)} N</strong><br>
-             T₂y = ${usedT2.toFixed(2)} · sin(${th2.toFixed(1)}°) = <strong>${calc.t2y.toFixed(2)} N</strong><br>
-             Total Upward Support (F<sub>g</sub>): <strong>${calc.totalUpwardForce.toFixed(2)} N</strong></p>
-          <p style="margin-top: 0.4rem; font-size: 0.95rem;"><strong>Calculated Hanging Mass:</strong><br>
-             <span class="math-expr">m = F<sub>g</sub> / g = ${calc.totalUpwardForce.toFixed(2)} / 9.80 = <strong>${calc.calculatedMassKg.toFixed(3)} kg (${calc.calculatedMassG.toFixed(1)} g)</strong></span><br>
-             Percent Error: <strong>${pErr}%</strong></p>
         </div>
       `;
     }

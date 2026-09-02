@@ -13,115 +13,46 @@
 
   <div class="shell">
     <!-- Header Banner -->
-    <header class="hero">
-      <div class="hero-top">
-        <div>
-          <a href="https://thinking-experiment-sims.github.io/interactive-physics/" class="brand-badge" style="text-decoration: none;" title="Go to Physics Simulations Hub">← The Thinking Experiment</a>
-          <h1>Balanced Forces: Hanging Mass &amp; 2D Statics Lab</h1>
-          <p class="hero-subtitle">
-            Determine the value of the hanging mass by measuring cord tensions with spring force sensors and measuring suspension angles using the virtual protractor.
-          </p>
+    <!-- Top App Bar: Brand, Title, Mode Switcher & Hub -->
+    <header class="app-header">
+      <div class="header-branding">
+        <a href="https://thinking-experiment-sims.github.io/interactive-physics/" class="brand-badge" style="text-decoration: none;" title="Go to Physics Simulations Hub">← The Thinking Experiment</a>
+        <div class="header-title-group">
+          <h1><span>⚖️</span> Balanced Forces: 2D Statics Lab</h1>
         </div>
-        <div class="hero-meta-badges">
-          <a href="https://thinking-experiment-sims.github.io/interactive-physics/" class="btn btn-sm btn-ghost" style="background: var(--surface-alt); color: var(--ink); border: 1px solid var(--border); text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700;">🏠 Simulation Hub</a>
+      </div>
+
+      <div class="header-actions">
+        <!-- Compact Mode Switcher Pill -->
+        <div class="mode-switcher-pill" id="modeSelectorCard" title="Toggle between Ideal Textbook Model and Real Laboratory Mode with spring stretch and scale uncertainty">
+          <label class="mode-toggle-label">
+            <input type="checkbox" id="chkRealLabMode">
+            <span class="mode-toggle-slider"></span>
+            <span class="mode-toggle-text">🔬 Real Lab Mode</span>
+          </label>
+          <span class="mode-status-badge" id="modeBadge">Ideal Scenario</span>
         </div>
+
+        <a href="https://thinking-experiment-sims.github.io/interactive-physics/" class="btn btn-sm btn-ghost" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700;">🏠 Hub</a>
       </div>
     </header>
 
-    <!-- Scenario Navigation Tabs -->
-    <nav class="scenario-nav" aria-label="Balanced Forces Scenarios">
-      <button class="scenario-tab active" data-scenario="symmetric">
-        ⚖️ 1. Symmetric Setup
-      </button>
-      <button class="scenario-tab" data-scenario="asymmetric">
-        📐 2. Asymmetric Setup
-      </button>
-      <button class="scenario-tab" data-scenario="mystery">
-        🧪 3. Mystery Mass Challenge
-      </button>
-      <button class="scenario-tab" data-scenario="sandbox">
-        ⚙️ 4. Custom Statics Sandbox
-      </button>
-    </nav>
+    <!-- Compact Scenario & Mode Strip -->
+    <section class="scenario-strip" aria-label="Scenario Selection and Guidance">
+      <nav class="scenario-nav" aria-label="Balanced Forces Scenarios">
+        <button class="scenario-tab active" data-scenario="symmetric">⚖️ 1. Symmetric</button>
+        <button class="scenario-tab" data-scenario="asymmetric">📐 2. Asymmetric</button>
+        <button class="scenario-tab" data-scenario="mystery">🧪 3. Mystery Mass</button>
+        <button class="scenario-tab" data-scenario="sandbox">⚙️ 4. Sandbox</button>
+      </nav>
 
-    <!-- Active Scenario Description Banner -->
-    <section class="scenario-banner" aria-label="Current Scenario Description">
-      <div>
-        <h2 class="scenario-banner-title" id="bannerTitle">1. Symmetric Balanced Forces</h2>
-        <p class="scenario-banner-desc" id="bannerDesc">
-          A load is suspended symmetrically between two stands. Use the protractor to measure the angles and read the spring scales.
-        </p>
-      </div>
-
-      <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-        <span class="meta-badge" style="background: #e6f4f8; color: var(--primary-teal-dark); font-weight: 700;">
-          🔬 Measure θ₁ &amp; θ₂ with Protractor
-        </span>
-      </div>
-    </section>
-
-    <!-- Simulation Mode Selector (Ideal Scenario vs. Real Lab Mode) -->
-    <section class="mode-selector-card" id="modeSelectorCard">
-      <div class="mode-header">
-        <label class="mode-checkbox-label">
-          <input type="checkbox" id="chkRealLabMode">
-          <span class="mode-checkbox-custom"></span>
-          <span class="mode-checkbox-title">
-            Enable <strong>Real Lab Mode</strong> (Sources of Uncertainty &amp; Spring Scale Stretch)
-          </span>
-        </label>
-        <span class="mode-status-badge" id="modeBadge">Ideal Scenario (Default)</span>
-      </div>
-      <div class="mode-explanation" id="modeExplanation">
-        <strong>💡 Mode Comparison:</strong>
-        <span id="modeDescText">
-          <strong>Ideal Scenario (Active):</strong> Textbook model where strings are inextensible (angles stay constant when mass changes) and sensors provide exact digital values. The net horizontal force is theoretically ΣF<sub>x</sub> = 0 N.
-        </span>
-      </div>
-    </section>
-
-    <!-- Sandbox Configuration Panel -->
-    <section class="sandbox-settings" id="sandboxSettings">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
-        <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-amber-dark); margin: 0;">
-          ⚙️ Apparatus &amp; Geometry Parameters
-        </h3>
-        <span style="font-size: 0.8rem; color: var(--muted); font-weight: 500;">
-          💡 You can drag the brass knot directly on the canvas!
-        </span>
-      </div>
-
-      <div class="sandbox-controls-grid">
-        <!-- Mass Control -->
-        <div class="sandbox-control-item" id="massControlItem">
-          <label>Hanging Mass: <strong id="valMass" style="color: var(--primary-teal-dark);">500 g</strong></label>
-          <input type="range" class="range-slider" id="sliderMass" min="50" max="1000" step="25" value="500">
-          <div class="mass-preset-bar">
-            <button class="preset-chip" data-mass="100">100g</button>
-            <button class="preset-chip" data-mass="250">250g</button>
-            <button class="preset-chip active" data-mass="500">500g</button>
-            <button class="preset-chip" data-mass="800">800g</button>
-          </div>
+      <div class="scenario-meta-line">
+        <div class="scenario-caption">
+          <strong id="bannerTitle" style="color: var(--primary-teal-dark);">1. Symmetric Balanced Forces:</strong>
+          <span id="bannerDesc">A load is suspended symmetrically between two stands. Use the protractor to measure the angles and read the spring scales.</span>
         </div>
-
-        <!-- Knot Horizontal Position (X) Control -->
-        <div class="sandbox-control-item" id="knotXControlItem">
-          <label for="sliderKnotX">Knot Horizontal Position (<span class="math-expr">X</span>): <strong id="valKnotX" style="color: var(--primary-teal-dark);">50% (Center)</strong></label>
-          <input type="range" class="range-slider" id="sliderKnotX" min="28" max="72" step="0.5" value="50">
-          <span style="font-size: 0.72rem; color: var(--muted);">↔ Slide or drag knot &bull; Height (Y) set by equilibrium</span>
-        </div>
-
-        <!-- Constant String Length & Equilibrium Geometry -->
-        <div class="sandbox-control-item" id="stringLengthControlItem">
-          <label>Total String Length (<span class="math-expr">L₁ + L₂</span>): <strong id="valLenTotal" style="color: var(--primary-teal-dark);">14.1 cm (Constant)</strong></label>
-          <div class="readout-meter">
-            <div class="readout-meter-fill teal" id="meterLenTotal" style="width: 100%;"></div>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; font-weight: 600; margin-top: 4px;">
-            <span style="color: var(--primary-teal-dark);">L₁: <strong id="valLen1">7.0 cm</strong></span>
-            <span style="color: var(--muted);">Height (Y): <strong id="valKnotY">58% (Auto)</strong></span>
-            <span style="color: var(--accent-amber-dark);">L₂: <strong id="valLen2">7.0 cm</strong></span>
-          </div>
+        <div class="mode-explanation-strip" id="modeExplanation">
+          <span id="modeDescText"><strong>Ideal Scenario:</strong> Textbook inextensible cords (ΣF<sub>x</sub> = 0 N). Toggle Real Lab Mode for spring stretch &amp; scale uncertainty.</span>
         </div>
       </div>
     </section>
@@ -133,11 +64,41 @@
       <section class="panel" aria-label="Physical Statics Apparatus">
         <div class="panel-header">
           <h2 class="panel-title">
-            <span>⚖️</span> Laboratory Statics Apparatus
+            <span>⚖️</span> Physical Statics Apparatus
           </h2>
-          <span style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">
-            Dual Force Sensor &amp; Hanging Load Rig
-          </span>
+          <div style="font-size: 0.76rem; font-weight: 700; color: var(--muted);" id="stringLengthControlItem">
+            Total String Length (<span class="math-expr">L₁ + L₂</span>): <strong id="valLenTotal" style="color: var(--primary-teal-dark);">14.1 cm (Constant)</strong>
+          </div>
+        </div>
+
+        <!-- Apparatus Setup Controls Strip (Docked directly above canvas) -->
+        <div class="apparatus-controls-strip">
+          <!-- Mass Control -->
+          <div class="control-box" id="massControlItem">
+            <div class="control-header">
+              <label>Hanging Mass: <strong id="valMass" style="color: var(--primary-teal-dark);">500 g</strong></label>
+            </div>
+            <input type="range" class="range-slider" id="sliderMass" min="50" max="1000" step="25" value="500">
+            <div class="mass-preset-bar">
+              <button class="preset-chip" data-mass="100">100g</button>
+              <button class="preset-chip" data-mass="250">250g</button>
+              <button class="preset-chip active" data-mass="500">500g</button>
+              <button class="preset-chip" data-mass="800">800g</button>
+            </div>
+          </div>
+
+          <!-- Knot Horizontal Position (X) Control -->
+          <div class="control-box" id="knotXControlItem">
+            <div class="control-header">
+              <label for="sliderKnotX">Knot Position (<span class="math-expr">X</span>): <strong id="valKnotX" style="color: var(--primary-teal-dark);">50% (Center)</strong></label>
+            </div>
+            <input type="range" class="range-slider" id="sliderKnotX" min="28" max="72" step="0.5" value="50">
+            <div class="geometry-status-line">
+              <span>L₁: <strong id="valLen1" style="color: var(--primary-teal);">7.0 cm</strong></span>
+              <span>Height: <strong id="valKnotY">58% (Auto)</strong></span>
+              <span>L₂: <strong id="valLen2" style="color: var(--accent-amber);">7.0 cm</strong></span>
+            </div>
+          </div>
         </div>
 
         <!-- Apparatus Canvas Wrapper -->
@@ -145,66 +106,65 @@
           <canvas id="apparatusCanvas"></canvas>
         </div>
 
-        <!-- Controls Bar -->
-        <div class="controls-bar">
+        <!-- Consolidated Controls & Tools Bar -->
+        <div class="controls-bar compact-bar">
           <div class="playback-buttons">
-            <button class="btn btn-ghost" id="btnToggleProtractor" title="Show or hide interactive protractor">
+            <button class="btn btn-ghost btn-sm" id="btnToggleProtractor" title="Show or hide interactive protractor">
               📐 Protractor
             </button>
-            <button class="btn btn-ghost" id="btnSnapProtractor" title="Snap protractor center to knot">
-              🎯 Snap to Knot
+            <button class="btn btn-ghost btn-sm" id="btnSnapProtractor" title="Snap protractor center to knot">
+              🎯 Snap
             </button>
-            <button class="btn btn-ghost" id="btnToggleRuler" title="Toggle metric ruler">
+            <button class="btn btn-ghost btn-sm" id="btnToggleRuler" title="Toggle metric ruler">
               📏 Ruler
             </button>
-            <button class="btn btn-ghost" id="btnReset" title="Reset setup">
+          </div>
+
+          <div class="inline-toggles-group">
+            <label class="toggle-label compact-toggle" title="Show magnified vertical scales on sides">
+              <input type="checkbox" id="chkZoomScales" checked>
+              <span>🔍 Vertical Scales</span>
+            </label>
+            <label class="toggle-label compact-toggle" title="Show horizontal level reference lines">
+              <input type="checkbox" id="chkLevel" checked>
+              <span>Level Lines</span>
+            </label>
+            <label class="toggle-label compact-toggle" title="Show sensor digital force badges">
+              <input type="checkbox" id="chkDials" checked>
+              <span>Badges</span>
+            </label>
+          </div>
+
+          <div class="action-buttons-group">
+            <button class="btn btn-ghost btn-sm" id="btnExportDiagram" title="Print or save diagram for measuring with a physical protractor">
+              🖨️ Export / Print
+            </button>
+            <button class="btn btn-ghost btn-sm" id="btnReset" title="Reset setup">
               ↺ Reset
             </button>
-          </div>
-
-          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-            <button class="btn btn-ghost" id="btnExportDiagram" title="Print or save diagram for measuring with a physical protractor">
-              🖨️ Export / Print Diagram
-            </button>
-            <button class="btn btn-accent" id="btnRecordTrial">
-              📋 Log Current Trial
+            <button class="btn btn-accent btn-sm" id="btnRecordTrial">
+              📋 Log
             </button>
           </div>
-        </div>
-
-        <!-- Toggles Row -->
-        <div class="toggles-row">
-          <label class="toggle-label">
-            <input type="checkbox" id="chkLevel" checked>
-            <span>Level Reference Lines</span>
-          </label>
-          <label class="toggle-label">
-            <input type="checkbox" id="chkDials" checked>
-            <span>Sensor Digital Badges</span>
-          </label>
-          <label class="toggle-label">
-            <input type="checkbox" id="chkZoomScales" checked>
-            <span>🔍 Vertical Scale Zoom</span>
-          </label>
         </div>
 
         <!-- Live Telemetry Ribbon (Only Measured Forces - No Spoiled Angles/Components/Fg) -->
-        <div class="telemetry-ribbon">
+        <div class="telemetry-ribbon compact-ribbon">
           <div class="telemetry-card">
-            <div class="telemetry-label">Force Sensor 1 (Left T₁)</div>
+            <div class="telemetry-label">Force Sensor 1 (T₁)</div>
             <div class="telemetry-val teal" id="telemT1">2.83 N</div>
           </div>
           <div class="telemetry-card">
-            <div class="telemetry-label">Force Sensor 2 (Right T₂)</div>
+            <div class="telemetry-label">Force Sensor 2 (T₂)</div>
             <div class="telemetry-val amber" id="telemT2">2.83 N</div>
           </div>
           <div class="telemetry-card">
-            <div class="telemetry-label">Knot Location (X, Y)</div>
-            <div class="telemetry-val" id="telemKnotPos" style="font-size: 1rem;">(50%, 58%)</div>
+            <div class="telemetry-label">Knot (X, Y)</div>
+            <div class="telemetry-val" id="telemKnotPos">(50%, 58%)</div>
           </div>
           <div class="telemetry-card">
             <div class="telemetry-label">System State</div>
-            <div class="telemetry-val" id="telemState" style="font-size: 0.95rem; color: var(--success);">⚖️ Balanced (At Rest)</div>
+            <div class="telemetry-val" id="telemState" style="color: var(--success);">⚖️ Balanced (At Rest)</div>
           </div>
         </div>
       </section>
@@ -218,106 +178,144 @@
             <span>🎯</span> Mystery Mass Challenge
           </div>
           <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 0.6rem;">
-            Read the two spring scales and measure the cord angles using the virtual protractor. Fill in the Force Table to calculate the unknown hanging mass:
+            The hanging mass is an unknown load. Measure the cord angles (θ₁, θ₂) with the protractor and observe the force sensor readings to calculate the mass.
           </p>
-          <div class="mystery-chips">
-            <button class="mystery-chip active" data-mystery="A">Mass A</button>
-            <button class="mystery-chip" data-mystery="B">Mass B</button>
-            <button class="mystery-chip" data-mystery="C">Mass C</button>
-            <button class="mystery-chip" data-mystery="D">Mass D</button>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.6rem;">
+            <button class="mystery-chip active" data-mystery="A">Mystery A</button>
+            <button class="mystery-chip" data-mystery="B">Mystery B</button>
+            <button class="mystery-chip" data-mystery="C">Mystery C</button>
+            <button class="mystery-chip" data-mystery="D">Mystery D</button>
           </div>
-          <div class="mystery-form">
-            <input type="number" class="styled-input" id="studentMassInput" placeholder="Enter calculated mass (g)..." step="1">
-            <button class="btn btn-accent" id="btnCheckMystery">Check Mass</button>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <input type="number" class="styled-input" id="studentMassInput" placeholder="Your mass in grams" style="max-width: 170px;">
+            <button class="btn btn-primary" id="btnCheckMystery">Check Mass</button>
           </div>
           <div class="feedback-box" id="mysteryFeedback"></div>
         </div>
 
-        <!-- Analysis Tabs Header -->
-        <div class="analysis-tabs" role="tablist">
-          <button class="analysis-tab-btn active" data-tab="tab-forcetable">Force Table</button>
-          <button class="analysis-tab-btn" data-tab="tab-fbd">Force Diagram (FBD)</button>
+        <!-- Analysis Navigation Tabs -->
+        <div class="analysis-tab-nav" aria-label="Analysis Visualizations">
+          <button class="analysis-tab-btn active" data-tab="tab-forcetable">Component Table</button>
+          <button class="analysis-tab-btn" data-tab="tab-fbd">FBD Vector Diagram</button>
           <button class="analysis-tab-btn" data-tab="tab-polygon">Vector Triangle</button>
           <button class="analysis-tab-btn" data-tab="tab-data">Data Log</button>
         </div>
 
-        <!-- TAB 1: Force Component Table (Horizontal Component | Force Name | Vertical Component) -->
+        <!-- TAB 1: Unified Interactive Force Component Table -->
         <div class="analysis-tab-pane active" id="tab-forcetable">
           <div class="math-card" style="margin-bottom: 0.6rem;">
-            <h4 style="margin-top: 0; color: var(--primary-teal-dark);">
-              📊 2D Statics Force Component Resolution Table
-            </h4>
-            <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 0.6rem;">
-              Break each force acting on the knot into horizontal (<span class="math-expr">F<sub>x</sub></span>) and vertical (<span class="math-expr">F<sub>y</sub></span>) components. In static equilibrium, the sum of components in each direction must equal zero.
-            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
+              <h4 style="margin: 0; color: var(--primary-teal-dark);">
+                📊 2D Statics Force Component Resolution Table
+              </h4>
+              <span style="font-size: 0.75rem; color: var(--muted); font-weight: 600;">
+                Equilibrium: ΣF<sub>x</sub> = 0 &bull; ΣF<sub>y</sub> = 0
+              </span>
+            </div>
 
             <div class="table-container">
-              <table class="data-table" style="font-size: 0.84rem; text-align: center;">
+              <table class="data-table unified-force-table">
                 <thead>
                   <tr style="background: var(--surface-alt);">
-                    <th style="color: var(--primary-teal); width: 35%;">Horizontal Component (<span class="math-expr">F<sub>x</sub></span>)</th>
-                    <th style="color: var(--ink); width: 30%;">Force Name</th>
-                    <th style="color: var(--accent-amber); width: 35%;">Vertical Component (<span class="math-expr">F<sub>y</sub></span>)</th>
+                    <th style="color: var(--primary-teal); width: 34%;">Horizontal (<span class="math-expr">F<sub>x</sub></span>)</th>
+                    <th style="color: var(--ink); width: 32%;">Force &amp; Measurements</th>
+                    <th style="color: var(--accent-amber); width: 34%;">Vertical (<span class="math-expr">F<sub>y</sub></span>)</th>
                   </tr>
                 </thead>
                 <tbody>
+                  <!-- Row 1: Tension 1 -->
                   <tr>
-                    <td><code>-T₁ · cos(θ₁)</code><br><span id="tblT1x" style="font-weight: 700; color: var(--primary-teal);">-</span></td>
-                    <td><strong>Tension 1 (<span class="math-expr">T&#x20D7;₁</span>)</strong></td>
-                    <td><code>+T₁ · sin(θ₁)</code><br><span id="tblT1y" style="font-weight: 700; color: var(--accent-amber);">-</span></td>
+                    <td>
+                      <div class="comp-formula"><code>-T₁·cos(θ₁)</code></div>
+                      <div class="comp-val teal" id="tblT1x">-</div>
+                    </td>
+                    <td class="force-cell">
+                      <div class="force-title"><strong>Tension 1 (<em>T</em><sub>1</sub>)</strong></div>
+                      <div class="inline-measure-group">
+                        <div class="measure-sub">
+                          <label for="wbTheta1">θ₁:</label>
+                          <input type="number" class="table-input" id="wbTheta1" placeholder="Angle °" step="0.1" title="Measured angle θ₁ with horizontal">
+                        </div>
+                        <div class="measure-sub" id="wbForce1Wrapper" style="display: none;">
+                          <label for="wbForce1">T₁:</label>
+                          <input type="number" class="table-input" id="wbForce1" placeholder="Scale N" step="0.1" title="Tension read from left scale">
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="comp-formula"><code>+T₁·sin(θ₁)</code></div>
+                      <div class="comp-val amber" id="tblT1y">-</div>
+                    </td>
                   </tr>
+
+                  <!-- Row 2: Tension 2 -->
                   <tr>
-                    <td><code>+T₂ · cos(θ₂)</code><br><span id="tblT2x" style="font-weight: 700; color: var(--primary-teal);">-</span></td>
-                    <td><strong>Tension 2 (<span class="math-expr">T&#x20D7;₂</span>)</strong></td>
-                    <td><code>+T₂ · sin(θ₂)</code><br><span id="tblT2y" style="font-weight: 700; color: var(--accent-amber);">-</span></td>
+                    <td>
+                      <div class="comp-formula"><code>+T₂·cos(θ₂)</code></div>
+                      <div class="comp-val teal" id="tblT2x">-</div>
+                    </td>
+                    <td class="force-cell">
+                      <div class="force-title"><strong>Tension 2 (<em>T</em><sub>2</sub>)</strong></div>
+                      <div class="inline-measure-group">
+                        <div class="measure-sub">
+                          <label for="wbTheta2">θ₂:</label>
+                          <input type="number" class="table-input" id="wbTheta2" placeholder="Angle °" step="0.1" title="Measured angle θ₂ with horizontal">
+                        </div>
+                        <div class="measure-sub" id="wbForce2Wrapper" style="display: none;">
+                          <label for="wbForce2">T₂:</label>
+                          <input type="number" class="table-input" id="wbForce2" placeholder="Scale N" step="0.1" title="Tension read from right scale">
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="comp-formula"><code>+T₂·sin(θ₂)</code></div>
+                      <div class="comp-val amber" id="tblT2y">-</div>
+                    </td>
                   </tr>
+
+                  <!-- Row 3: Gravity -->
                   <tr>
-                    <td><code>0 N</code></td>
-                    <td><strong>Gravity (<span class="math-expr">F&#x20D7;<sub>g</sub></span>)</strong></td>
-                    <td><code>-F<sub>g</sub> = -m·g</code><br><span id="tblFgy" style="font-weight: 700; color: var(--error);">-</span></td>
+                    <td>
+                      <div class="comp-formula"><code>0 N</code></div>
+                    </td>
+                    <td class="force-cell">
+                      <div class="force-title"><strong>Gravity (<em>F</em><sub>g</sub> = <em>m</em>·<em>g</em>)</strong></div>
+                      <span style="font-size: 0.72rem; color: var(--muted);">Downward Weight</span>
+                    </td>
+                    <td>
+                      <div class="comp-formula"><code>-F<sub>g</sub> = -(T₁y + T₂y)</code></div>
+                      <div class="comp-val red" id="tblFgy">-</div>
+                    </td>
                   </tr>
-                  <tr style="background: #f0f7fa; font-weight: 700; border-top: 2px solid var(--border);">
-                    <td><span class="math-expr">ΣF<sub>x</sub> = 0 N</span><br><span id="tblSumFx" style="font-size: 0.78rem; color: var(--muted);">(Balanced)</span></td>
-                    <td><strong>Net Force (<span class="math-expr">ΣF&#x20D7;</span>)</strong></td>
-                    <td><span class="math-expr">ΣF<sub>y</sub> = 0 N</span><br><span id="tblSumFy" style="font-size: 0.78rem; color: var(--muted);">(Balanced)</span></td>
+
+                  <!-- Row 4: Net Force Sum -->
+                  <tr class="table-sum-row">
+                    <td>
+                      <div class="comp-formula"><strong>ΣF<sub>x</sub> = T₂x - T₁x</strong></div>
+                      <div class="comp-val" id="tblSumFx" style="font-size: 0.84rem;">-</div>
+                    </td>
+                    <td class="force-cell">
+                      <div class="force-title"><strong>Net Force (&Sigma;<em>F</em>)</strong></div>
+                      <span style="font-size: 0.72rem; color: var(--success); font-weight: 700;">Static Equilibrium</span>
+                    </td>
+                    <td>
+                      <div class="comp-formula"><strong>ΣF<sub>y</sub> = T₁y + T₂y - F<sub>g</sub></strong></div>
+                      <div class="comp-val" id="tblSumFy" style="font-size: 0.84rem;">-</div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <!-- Student Calculation Workbench attached to Table -->
-            <div style="margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px dashed var(--border);">
-              <h4 style="font-size: 0.86rem; margin-bottom: 0.4rem; color: var(--accent-amber-dark);">
-                🧮 Solve for Hanging Mass from Measured Angles
-              </h4>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <div>
-                  <label style="font-size: 0.76rem; font-weight: 700; color: var(--muted);">Measured θ₁ (deg with horiz):</label>
-                  <input type="number" class="styled-input" id="wbTheta1" placeholder="e.g. 33.0" step="0.1">
-                </div>
-                <div>
-                  <label style="font-size: 0.76rem; font-weight: 700; color: var(--muted);">Measured θ₂ (deg with horiz):</label>
-                  <input type="number" class="styled-input" id="wbTheta2" placeholder="e.g. 33.0" step="0.1">
-                </div>
-              </div>
-              <div id="realLabForceInputsRow" style="display: none; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <div>
-                  <label style="font-size: 0.76rem; font-weight: 700; color: var(--muted);">Read T₁ from Left Scale (N):</label>
-                  <input type="number" class="styled-input" id="wbForce1" placeholder="e.g. 5.2" step="0.1">
-                </div>
-                <div>
-                  <label style="font-size: 0.76rem; font-weight: 700; color: var(--muted);">Read T₂ from Right Scale (N):</label>
-                  <input type="number" class="styled-input" id="wbForce2" placeholder="e.g. 5.2" step="0.1">
-                </div>
-              </div>
-              <button class="btn btn-primary" id="btnSolveWorkbench" style="width: 100%;">
-                Compute Table Components &amp; Calculate Mass
+            <!-- Single Compute Action & Calculation Summary -->
+            <div style="margin-top: 0.7rem;">
+              <button class="btn btn-primary" id="btnSolveWorkbench" style="width: 100%; font-size: 0.9rem; padding: 0.55rem;">
+                🧮 Compute Table Components &amp; Calculate Mass
               </button>
               <div id="workbenchResults"></div>
             </div>
           </div>
         </div>
-
         <!-- TAB 2: Free Body Diagram -->
         <div class="analysis-tab-pane" id="tab-fbd">
           <div class="canvas-card fbd-canvas-wrapper">
@@ -340,7 +338,7 @@
           </div>
           <div class="math-card">
             <h4>Closed Vector Polygon (Tip-to-Tail)</h4>
-            <p><strong>ΣF&#x20D7; = T&#x20D7;₁ + T&#x20D7;₂ + F&#x20D7;<sub>g</sub> = 0&#x20D7;</strong></p>
+            <p><strong>&Sigma;<em>F</em> = <em>T</em><sub>1</sub> + <em>T</em><sub>2</sub> + <em>F</em><sub>g</sub> = 0</strong></p>
             <p style="margin-top: 0.35rem; color: var(--muted);">
               Because the knot is in static equilibrium, adding the force vectors tip-to-tail forms a closed triangle returning to the start point.
             </p>
