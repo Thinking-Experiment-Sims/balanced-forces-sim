@@ -578,6 +578,83 @@ canvas {
   border-color: var(--accent-amber-dark);
 }
 
+/* Simulation Mode Selector Card (Ideal vs. Real Lab Mode) */
+.mode-selector-card {
+  background: var(--surface);
+  border: 1.5px solid var(--primary-teal-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.15rem;
+  margin-bottom: 1.1rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.mode-selector-card.real-mode {
+  border-color: var(--accent-amber);
+  background: #fdfaf6;
+  box-shadow: 0 4px 14px rgba(214, 123, 25, 0.12);
+}
+
+.mode-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.mode-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mode-checkbox-label input[type="checkbox"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: var(--accent-amber);
+  cursor: pointer;
+}
+
+.mode-checkbox-title {
+  font-size: 0.94rem;
+  color: var(--ink);
+}
+
+.mode-status-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #e6f4f8;
+  color: var(--primary-teal-dark);
+  border: 1px solid var(--primary-teal-border);
+}
+
+.mode-status-badge.real {
+  background: #fdf3e8;
+  color: var(--accent-amber-dark);
+  border-color: var(--accent-amber-border);
+}
+
+.mode-explanation {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
+  background: rgba(15, 126, 155, 0.04);
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--primary-teal);
+}
+
+.mode-selector-card.real-mode .mode-explanation {
+  background: rgba(214, 123, 25, 0.06);
+  border-left-color: var(--accent-amber);
+}
+
 /* Mystery Mass Challenge Container */
 .mystery-container {
   background: var(--accent-amber-light);

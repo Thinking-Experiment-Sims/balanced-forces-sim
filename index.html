@@ -60,6 +60,26 @@
       </div>
     </section>
 
+    <!-- Simulation Mode Selector (Ideal Scenario vs. Real Lab Mode) -->
+    <section class="mode-selector-card" id="modeSelectorCard">
+      <div class="mode-header">
+        <label class="mode-checkbox-label">
+          <input type="checkbox" id="chkRealLabMode">
+          <span class="mode-checkbox-custom"></span>
+          <span class="mode-checkbox-title">
+            Enable <strong>Real Lab Mode</strong> (Sources of Uncertainty &amp; Spring Scale Stretch)
+          </span>
+        </label>
+        <span class="mode-status-badge" id="modeBadge">Ideal Scenario (Default)</span>
+      </div>
+      <div class="mode-explanation" id="modeExplanation">
+        <strong>💡 Mode Comparison:</strong>
+        <span id="modeDescText">
+          <strong>Ideal Scenario (Active):</strong> Textbook model where strings are inextensible (angles stay constant when mass changes) and sensors provide exact digital values. The net horizontal force is theoretically ΣF<sub>x</sub> = 0 N.
+        </span>
+      </div>
+    </section>
+
     <!-- Sandbox Configuration Panel -->
     <section class="sandbox-settings" id="sandboxSettings">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
@@ -272,6 +292,16 @@
                 <div>
                   <label style="font-size: 0.76rem; font-weight: 700; color: var(--muted);">Measured θ₂ (deg with horiz):</label>
                   <input type="number" class="styled-input" id="wbTheta2" placeholder="e.g. 33.0" step="0.1">
+                </div>
+              </div>
+              <div id="realLabForceInputsRow" style="display: none; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <div>
+                  <label style="font-size: 0.76rem; font-weight: 700; color: var(--muted);">Read T₁ from Left Scale (N):</label>
+                  <input type="number" class="styled-input" id="wbForce1" placeholder="e.g. 5.2" step="0.1">
+                </div>
+                <div>
+                  <label style="font-size: 0.76rem; font-weight: 700; color: var(--muted);">Read T₂ from Right Scale (N):</label>
+                  <input type="number" class="styled-input" id="wbForce2" placeholder="e.g. 5.2" step="0.1">
                 </div>
               </div>
               <button class="btn btn-primary" id="btnSolveWorkbench" style="width: 100%;">

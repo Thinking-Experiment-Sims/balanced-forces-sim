@@ -106,7 +106,16 @@
         printDiagramImg: document.getElementById('printDiagramImg'),
         printSetupTitle: document.getElementById('printSetupTitle'),
         printValT1: document.getElementById('printValT1'),
-        printValT2: document.getElementById('printValT2')
+        printValT2: document.getElementById('printValT2'),
+
+        // Simulation Mode Elements
+        chkRealLabMode: document.getElementById('chkRealLabMode'),
+        modeSelectorCard: document.getElementById('modeSelectorCard'),
+        modeBadge: document.getElementById('modeBadge'),
+        modeDescText: document.getElementById('modeDescText'),
+        realLabForceInputsRow: document.getElementById('realLabForceInputsRow'),
+        wbForce1: document.getElementById('wbForce1'),
+        wbForce2: document.getElementById('wbForce2')
       };
 
       // State (Normalized Coordinates for Resolution Independence)
@@ -114,6 +123,9 @@
         activeScenario: 'symmetric',
         massKg: 0.500,
         g: 9.80,
+
+        // Mode: Ideal Scenario (Default) vs. Real Lab Mode (Elastic Stretch & Uncertainty)
+        isRealLabMode: false,
 
         // Normalized knot position [0..1, 0..1] relative to apparatus canvas
         normKnotX: 0.50,
@@ -164,6 +176,7 @@
 
     init() {
       this.bindEvents();
+      this.updateModeUI();
       this.setScenario('symmetric');
 
       const handleResize = () => {
@@ -207,6 +220,17 @@
       return this.state.massKg;
     }
 
+    getEffectiveKnotY() {
+      if (!this.state.isRealLabMode) {
+        return this.state.normKnotY;
+      }
+      // Real Lab Mode: Springs stretch under load (Hooke's Law: Delta L = T / k)
+      // Heavier mass drops the knot lower; lighter mass raises the knot
+      const massKg = this.getActiveMassKg();
+      const springSag = (massKg - 0.500) * 0.08;
+      return Math.max(0.36, Math.min(0.74, this.state.normKnotY + springSag));
+    }
+
     getApparatusCoords() {
       const canvas = this.dom.apparatusCanvas;
       const dpr = window.devicePixelRatio || 1;
@@ -215,7 +239,8 @@
 
       const s1 = { x: w * 0.18, y: h * 0.24 };
       const s2 = { x: w * 0.82, y: h * 0.24 };
-      const p = { x: w * this.state.normKnotX, y: h * this.state.normKnotY };
+      const effY = this.getEffectiveKnotY();
+      const p = { x: w * this.state.normKnotX, y: h * effY };
 
       return { w, h, s1, s2, p, dpr };
     }
@@ -239,9 +264,16 @@
       const eq = this.equilibrium;
       if (!eq) return;
 
-      // Only display what real sensors measure (Tensions) - No spoiled angles/components/Fg
-      if (this.dom.telemT1) this.dom.telemT1.textContent = `${eq.t1.toFixed(2)} N`;
-      if (this.dom.telemT2) this.dom.telemT2.textContent = `${eq.t2.toFixed(2)} N`;
+      // Forces Display (Ideal = exact digital readout; Real Lab = read from graduated scale)
+      if (this.state.isRealLabMode) {
+        const estT1 = (Math.round(eq.t1 * 10) / 10).toFixed(1);
+        const estT2 = (Math.round(eq.t2 * 10) / 10).toFixed(1);
+        if (this.dom.telemT1) this.dom.telemT1.innerHTML = `<span style="font-size: 0.9rem; color: var(--accent-amber-dark);">Read Scale (~${estT1} N)</span>`;
+        if (this.dom.telemT2) this.dom.telemT2.innerHTML = `<span style="font-size: 0.9rem; color: var(--accent-amber-dark);">Read Scale (~${estT2} N)</span>`;
+      } else {
+        if (this.dom.telemT1) this.dom.telemT1.textContent = `${eq.t1.toFixed(2)} N`;
+        if (this.dom.telemT2) this.dom.telemT2.textContent = `${eq.t2.toFixed(2)} N`;
+      }
       if (this.dom.telemKnotPos) {
         this.dom.telemKnotPos.textContent = `(${Math.round(this.state.normKnotX * 100)}%, ${Math.round(this.state.normKnotY * 100)}%)`;
       }
@@ -272,7 +304,45 @@
       }
     }
 
+    updateModeUI() {
+      const isReal = this.state.isRealLabMode;
+      if (this.dom.chkRealLabMode) {
+        this.dom.chkRealLabMode.checked = isReal;
+      }
+      if (this.dom.modeSelectorCard) {
+        this.dom.modeSelectorCard.classList.toggle('real-mode', isReal);
+      }
+      if (this.dom.modeBadge) {
+        this.dom.modeBadge.classList.toggle('real', isReal);
+        this.dom.modeBadge.textContent = isReal ? 'Real Lab Mode (Active)' : 'Ideal Scenario (Default)';
+      }
+      if (this.dom.modeDescText) {
+        if (isReal) {
+          this.dom.modeDescText.innerHTML = `
+            <strong>Real Lab Mode (Active):</strong> Internal springs in the scales stretch under load (ΔL = T/k), so hanging heavier masses causes the knot to visibly sag and cord angles to steepen. Digital values are replaced by analog spring scale readings; experimental uncertainty means your calculated horizontal components will satisfy ΣF<sub>x</sub> ≈ 0 N (close enough to zero, as in authentic lab experiments)!
+          `;
+        } else {
+          this.dom.modeDescText.innerHTML = `
+            <strong>Ideal Scenario (Active):</strong> Textbook model where strings are inextensible (angles stay constant when mass changes) and sensors provide exact digital values. The net horizontal force is theoretically ΣF<sub>x</sub> = 0 N.
+          `;
+        }
+      }
+      if (this.dom.realLabForceInputsRow) {
+        this.dom.realLabForceInputsRow.style.display = isReal ? 'grid' : 'none';
+      }
+    }
+
     bindEvents() {
+      // Real Lab Mode Checkbox
+      if (this.dom.chkRealLabMode) {
+        this.dom.chkRealLabMode.addEventListener('change', (e) => {
+          this.state.isRealLabMode = e.target.checked;
+          this.updateModeUI();
+          this.updateEquilibrium();
+          this.render();
+        });
+      }
+
       // Scenario Tabs
       this.dom.scenarioTabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -548,10 +618,29 @@
         return;
       }
 
-      const calc = BalancedForcesPhysics.calculateMassFromMeasurements(eq.t1, eq.t2, th1, th2, this.state.g);
+      let usedT1 = eq.t1;
+      let usedT2 = eq.t2;
+
+      if (this.state.isRealLabMode) {
+        if (this.dom.wbForce1 && !isNaN(parseFloat(this.dom.wbForce1.value)) && parseFloat(this.dom.wbForce1.value) > 0) {
+          usedT1 = parseFloat(this.dom.wbForce1.value);
+        } else {
+          usedT1 = Math.round(eq.t1 * 10) / 10;
+        }
+
+        if (this.dom.wbForce2 && !isNaN(parseFloat(this.dom.wbForce2.value)) && parseFloat(this.dom.wbForce2.value) > 0) {
+          usedT2 = parseFloat(this.dom.wbForce2.value);
+        } else {
+          usedT2 = Math.round(eq.t2 * 10) / 10;
+        }
+      }
+
+      const calc = BalancedForcesPhysics.calculateMassFromMeasurements(usedT1, usedT2, th1, th2, this.state.g);
       const actualKg = this.getActiveMassKg();
       const actualG = actualKg * 1000;
       const pErr = BalancedForcesPhysics.calculatePercentError(calc.calculatedMassG, actualG);
+      const netFx = calc.t2x - calc.t1x;
+      const netFxStr = (netFx >= 0 ? '+' : '') + netFx.toFixed(2);
 
       // Populate Table Cells
       if (this.dom.tblT1x) this.dom.tblT1x.textContent = `-${calc.t1x.toFixed(2)} N`;
@@ -559,19 +648,35 @@
       if (this.dom.tblT2x) this.dom.tblT2x.textContent = `+${calc.t2x.toFixed(2)} N`;
       if (this.dom.tblT2y) this.dom.tblT2y.textContent = `+${calc.t2y.toFixed(2)} N`;
       if (this.dom.tblFgy) this.dom.tblFgy.textContent = `-${calc.totalUpwardForce.toFixed(2)} N`;
-      if (this.dom.tblSumFx) this.dom.tblSumFx.textContent = `|T₂x - T₁x| = ${calc.horizontalImbalance.toFixed(2)} N`;
+      if (this.dom.tblSumFx) {
+        if (this.state.isRealLabMode) {
+          const isClose = Math.abs(netFx) <= 0.20;
+          this.dom.tblSumFx.textContent = `ΣFx = ${netFxStr} N ${isClose ? '(Close to 0)' : '(Off)'}`;
+        } else {
+          this.dom.tblSumFx.textContent = `|T₂x - T₁x| = ${calc.horizontalImbalance.toFixed(2)} N`;
+        }
+      }
       if (this.dom.tblSumFy) this.dom.tblSumFy.textContent = `T₁y + T₂y = ${calc.totalUpwardForce.toFixed(2)} N`;
+
+      const uncertaintyNote = this.state.isRealLabMode ? `
+        <div style="margin-top: 0.5rem; padding: 0.4rem 0.6rem; background: ${Math.abs(netFx) <= 0.20 ? '#ecfdf5' : '#fffbeb'}; border-left: 3px solid ${Math.abs(netFx) <= 0.20 ? 'var(--success)' : 'var(--accent-amber)'}; border-radius: 4px; font-size: 0.8rem;">
+          ${Math.abs(netFx) <= 0.20 ?
+            '<strong>✅ Net Horizontal Force is close enough to zero (' + netFxStr + ' N)!</strong> In real laboratory experiments, slight reading uncertainty means components do not cancel to exactly 0.00 N, confirming equilibrium within experimental error.' :
+            '<strong>⚠️ Noticeable imbalance (' + netFxStr + ' N).</strong> Check your scale reading or verify your angle alignment with the protractor.'}
+        </div>
+      ` : '';
 
       outDiv.innerHTML = `
         <div class="math-card" style="margin-top: 0.8rem; background: #f8fafc; border-left: 4px solid var(--primary-teal);">
-          <h4 style="color: var(--primary-teal-dark);">Equilibrium Resolution Summary</h4>
+          <h4 style="color: var(--primary-teal-dark);">Equilibrium Resolution Summary (${this.state.isRealLabMode ? 'Real Lab Mode' : 'Ideal Scenario'})</h4>
           <p><strong>Horizontal Balance (ΣF<sub>x</sub> = 0):</strong><br>
-             T₁x = -${eq.t1.toFixed(2)} · cos(${th1.toFixed(1)}°) = <strong>-${calc.t1x.toFixed(2)} N</strong><br>
-             T₂x = +${eq.t2.toFixed(2)} · cos(${th2.toFixed(1)}°) = <strong>+${calc.t2x.toFixed(2)} N</strong><br>
-             Net Horizontal Imbalance: <strong>${calc.horizontalImbalance.toFixed(2)} N</strong></p>
+             T₁x = -${usedT1.toFixed(2)} · cos(${th1.toFixed(1)}°) = <strong>-${calc.t1x.toFixed(2)} N</strong><br>
+             T₂x = +${usedT2.toFixed(2)} · cos(${th2.toFixed(1)}°) = <strong>+${calc.t2x.toFixed(2)} N</strong><br>
+             Net Horizontal: <strong>ΣF<sub>x</sub> = ${netFxStr} N</strong></p>
+          ${uncertaintyNote}
           <p style="margin-top: 0.4rem;"><strong>Vertical Balance (ΣF<sub>y</sub> = 0):</strong><br>
-             T₁y = ${eq.t1.toFixed(2)} · sin(${th1.toFixed(1)}°) = <strong>${calc.t1y.toFixed(2)} N</strong><br>
-             T₂y = ${eq.t2.toFixed(2)} · sin(${th2.toFixed(1)}°) = <strong>${calc.t2y.toFixed(2)} N</strong><br>
+             T₁y = ${usedT1.toFixed(2)} · sin(${th1.toFixed(1)}°) = <strong>${calc.t1y.toFixed(2)} N</strong><br>
+             T₂y = ${usedT2.toFixed(2)} · sin(${th2.toFixed(1)}°) = <strong>${calc.t2y.toFixed(2)} N</strong><br>
              Total Upward Support (F<sub>g</sub>): <strong>${calc.totalUpwardForce.toFixed(2)} N</strong></p>
           <p style="margin-top: 0.4rem; font-size: 0.95rem;"><strong>Calculated Hanging Mass:</strong><br>
              <span class="math-expr">m = F<sub>g</sub> / g = ${calc.totalUpwardForce.toFixed(2)} / 9.80 = <strong>${calc.calculatedMassKg.toFixed(3)} kg (${calc.calculatedMassG.toFixed(1)} g)</strong></span><br>
@@ -1406,17 +1511,22 @@
         drawRoundedRect(ctx, 8, -barrelW / 2, 8, barrelW, 2, true, false);
         drawRoundedRect(ctx, 8 + scaleLen - 8, -barrelW / 2, 8, barrelW, 2, true, false);
 
-        // Graduated Newton Ticks
+        // Graduated Newton Ticks (Enhanced for analog reading)
         ctx.fillStyle = '#0a576b';
-        ctx.font = '7.5px Inter, sans-serif';
+        ctx.strokeStyle = '#0f7e9b';
+        ctx.font = '7px Inter, sans-serif';
         ctx.textAlign = 'center';
-        for (let n = 0; n <= 10; n += 2) {
+        for (let n = 0; n <= 10; n += 1) {
           const tickX = 18 + (n / 10) * (scaleLen - 28);
+          const isMajor = (n % 2 === 0);
+          ctx.lineWidth = isMajor ? 1.2 : 0.6;
           ctx.beginPath();
           ctx.moveTo(tickX, -barrelW / 2 + 2);
-          ctx.lineTo(tickX, -barrelW / 2 + 6);
+          ctx.lineTo(tickX, -barrelW / 2 + (isMajor ? 7 : 4));
           ctx.stroke();
-          ctx.fillText(n.toString(), tickX, 7);
+          if (isMajor) {
+            ctx.fillText(n.toString(), tickX, 7);
+          }
         }
 
         // Spring Deflection
@@ -1458,15 +1568,21 @@
           ctx.save();
           ctx.rotate(-angleRad);
           ctx.fillStyle = '#ffffff';
-          drawRoundedRect(ctx, -26, isLeft ? -42 : 24, 52, 22, 4, true, true);
-          ctx.strokeStyle = '#0f7e9b';
+          const badgeW = this.state.isRealLabMode ? 74 : 54;
+          drawRoundedRect(ctx, -badgeW / 2, isLeft ? -42 : 24, badgeW, 22, 4, true, true);
+          ctx.strokeStyle = isLeft ? '#0f7e9b' : '#d67b19';
           ctx.lineWidth = 1.5;
           ctx.stroke();
 
-          ctx.fillStyle = '#0f7e9b';
-          ctx.font = 'bold 10px Inter, sans-serif';
+          ctx.fillStyle = isLeft ? '#0f7e9b' : '#d67b19';
+          ctx.font = 'bold 9.5px Inter, sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(`${tension.toFixed(2)} N`, 0, isLeft ? -28 : 38);
+          ctx.textBaseline = 'middle';
+          if (this.state.isRealLabMode) {
+            ctx.fillText('Read Scale 👁️', 0, isLeft ? -31 : 35);
+          } else {
+            ctx.fillText(`${tension.toFixed(2)} N`, 0, isLeft ? -31 : 35);
+          }
           ctx.restore();
         }
 
