@@ -121,7 +121,7 @@
 
         // Protractor Tool
         protractor: {
-          visible: true,
+          visible: false,
           normX: 0.50,
           normY: 0.58,
           rotationDeg: 0,
@@ -335,6 +335,8 @@
       const btnSnap = document.getElementById('btnSnapProtractor');
       if (btnSnap) {
         btnSnap.addEventListener('click', () => {
+          this.state.protractor.visible = true;
+          if (btnProtractor) btnProtractor.classList.add('active');
           this.state.protractor.normX = this.state.normKnotX;
           this.state.protractor.normY = this.state.normKnotY;
           this.state.protractor.rotationDeg = 0;
