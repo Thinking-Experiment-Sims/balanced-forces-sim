@@ -15,7 +15,7 @@
     ctx.arcTo(x + width, y, x + width, y + height, radius);
     ctx.arcTo(x + width, y + height, x, y + height, radius);
     ctx.arcTo(x, y + height, x, y, radius);
-    ctx.arcTo(x, y + width, y, radius);
+    ctx.arcTo(x, y, x + width, y, radius);
     ctx.closePath();
     if (fill) ctx.fill();
     if (stroke) ctx.stroke();
@@ -81,7 +81,20 @@
         studentMassInput: document.getElementById('studentMassInput'),
         btnCheckMystery: document.getElementById('btnCheckMystery'),
         mysteryFeedback: document.getElementById('mysteryFeedback'),
-        trialsTableBody: document.getElementById('trialsTableBody')
+        trialsTableBody: document.getElementById('trialsTableBody'),
+
+        // Force Table Elements
+        tblT1x: document.getElementById('tblT1x'),
+        tblT1y: document.getElementById('tblT1y'),
+        tblT2x: document.getElementById('tblT2x'),
+        tblT2y: document.getElementById('tblT2y'),
+        tblFgy: document.getElementById('tblFgy'),
+        tblSumFx: document.getElementById('tblSumFx'),
+        tblSumFy: document.getElementById('tblSumFy'),
+        wbTheta1: document.getElementById('wbTheta1'),
+        wbTheta2: document.getElementById('wbTheta2'),
+        btnSolveWorkbench: document.getElementById('btnSolveWorkbench'),
+        workbenchResults: document.getElementById('workbenchResults')
       };
 
       // State (Normalized Coordinates for Resolution Independence)
@@ -148,8 +161,8 @@
       };
 
       window.addEventListener('resize', handleResize);
-      setTimeout(handleResize, 50);
-      setTimeout(handleResize, 200);
+      setTimeout(handleResize, 40);
+      setTimeout(handleResize, 150);
 
       this.resizeCanvases();
       this.updateEquilibrium();
@@ -214,7 +227,7 @@
       const eq = this.equilibrium;
       if (!eq) return;
 
-      // Only display what real sensors measure (Tensions) - No spoiled angles/components
+      // Only display what real sensors measure (Tensions) - No spoiled angles/components/Fg
       if (this.dom.telemT1) this.dom.telemT1.textContent = `${eq.t1.toFixed(2)} N`;
       if (this.dom.telemT2) this.dom.telemT2.textContent = `${eq.t2.toFixed(2)} N`;
       if (this.dom.telemKnotPos) {
@@ -385,10 +398,9 @@
         btnCopy.addEventListener('click', () => this.copyData());
       }
 
-      // Calculation Workbench
-      const btnSolveWB = document.getElementById('btnSolveWorkbench');
-      if (btnSolveWB) {
-        btnSolveWB.addEventListener('click', () => this.solveWorkbench());
+      // Solve Force Table / Workbench Button
+      if (this.dom.btnSolveWorkbench) {
+        this.dom.btnSolveWorkbench.addEventListener('click', () => this.solveForceTable());
       }
 
       // Tab Navigation
@@ -490,44 +502,52 @@
       `;
     }
 
-    solveWorkbench() {
-      const t1In = document.getElementById('wbT1');
-      const t2In = document.getElementById('wbT2');
-      const th1In = document.getElementById('wbTheta1');
-      const th2In = document.getElementById('wbTheta2');
-      const outDiv = document.getElementById('workbenchResults');
+    solveForceTable() {
+      const eq = this.equilibrium;
+      if (!eq) return;
 
-      if (!t1In || !t2In || !th1In || !th2In || !outDiv) return;
+      const th1In = this.dom.wbTheta1;
+      const th2In = this.dom.wbTheta2;
+      const outDiv = this.dom.workbenchResults;
 
-      const t1 = parseFloat(t1In.value);
-      const t2 = parseFloat(t2In.value);
+      if (!th1In || !th2In || !outDiv) return;
+
       const th1 = parseFloat(th1In.value);
       const th2 = parseFloat(th2In.value);
 
-      if (isNaN(t1) || isNaN(t2) || isNaN(th1) || isNaN(th2)) {
-        outDiv.innerHTML = '<p style="color:var(--accent-amber); font-weight:700; margin-top:8px;">Please fill in all 4 measured fields (T₁, T₂, θ₁, θ₂).</p>';
+      if (isNaN(th1) || isNaN(th2) || th1 <= 0 || th2 <= 0) {
+        outDiv.innerHTML = '<p style="color:var(--accent-amber); font-weight:700; margin-top:8px;">Please enter measured positive angles for θ₁ and θ₂ (in degrees with horizontal).</p>';
         return;
       }
 
-      const calc = BalancedForcesPhysics.calculateMassFromMeasurements(t1, t2, th1, th2, this.state.g);
+      const calc = BalancedForcesPhysics.calculateMassFromMeasurements(eq.t1, eq.t2, th1, th2, this.state.g);
       const actualKg = this.getActiveMassKg();
       const actualG = actualKg * 1000;
       const pErr = BalancedForcesPhysics.calculatePercentError(calc.calculatedMassG, actualG);
 
+      // Populate Table Cells
+      if (this.dom.tblT1x) this.dom.tblT1x.textContent = `-${calc.t1x.toFixed(2)} N`;
+      if (this.dom.tblT1y) this.dom.tblT1y.textContent = `+${calc.t1y.toFixed(2)} N`;
+      if (this.dom.tblT2x) this.dom.tblT2x.textContent = `+${calc.t2x.toFixed(2)} N`;
+      if (this.dom.tblT2y) this.dom.tblT2y.textContent = `+${calc.t2y.toFixed(2)} N`;
+      if (this.dom.tblFgy) this.dom.tblFgy.textContent = `-${calc.totalUpwardForce.toFixed(2)} N`;
+      if (this.dom.tblSumFx) this.dom.tblSumFx.textContent = `|T₂x - T₁x| = ${calc.horizontalImbalance.toFixed(2)} N`;
+      if (this.dom.tblSumFy) this.dom.tblSumFy.textContent = `T₁y + T₂y = ${calc.totalUpwardForce.toFixed(2)} N`;
+
       outDiv.innerHTML = `
-        <div class="math-card" style="margin-top: 0.8rem;">
-          <h4>Calculated Equilibrium Resolution</h4>
-          <p><strong>Horizontal Balance:</strong><br>
-             T₁x = ${t1.toFixed(2)} · cos(${th1.toFixed(1)}°) = <strong>${calc.t1x.toFixed(2)} N</strong> (left)<br>
-             T₂x = ${t2.toFixed(2)} · cos(${th2.toFixed(1)}°) = <strong>${calc.t2x.toFixed(2)} N</strong> (right)<br>
-             Horizontal Imbalance: |T₂x - T₁x| = <strong>${calc.horizontalImbalance.toFixed(2)} N</strong></p>
-          <p style="margin-top: 0.4rem;"><strong>Vertical Support:</strong><br>
-             T₁y = ${t1.toFixed(2)} · sin(${th1.toFixed(1)}°) = <strong>${calc.t1y.toFixed(2)} N</strong><br>
-             T₂y = ${t2.toFixed(2)} · sin(${th2.toFixed(1)}°) = <strong>${calc.t2y.toFixed(2)} N</strong><br>
-             Total Upward Force: ΣF<sub>y</sub> = <strong>${calc.totalUpwardForce.toFixed(2)} N</strong></p>
-          <p style="margin-top: 0.4rem;"><strong>Calculated Load Mass:</strong><br>
-             m = ΣF<sub>y</sub> / g = ${calc.totalUpwardForce.toFixed(2)} / 9.80 = <strong>${calc.calculatedMassKg.toFixed(3)} kg (${calc.calculatedMassG.toFixed(1)} g)</strong><br>
-             Actual Mass: <strong>${actualG.toFixed(1)} g</strong> | Error: <strong>${pErr}%</strong></p>
+        <div class="math-card" style="margin-top: 0.8rem; background: #f8fafc; border-left: 4px solid var(--primary-teal);">
+          <h4 style="color: var(--primary-teal-dark);">Equilibrium Resolution Summary</h4>
+          <p><strong>Horizontal Balance (ΣF<sub>x</sub> = 0):</strong><br>
+             T₁x = -${eq.t1.toFixed(2)} · cos(${th1.toFixed(1)}°) = <strong>-${calc.t1x.toFixed(2)} N</strong><br>
+             T₂x = +${eq.t2.toFixed(2)} · cos(${th2.toFixed(1)}°) = <strong>+${calc.t2x.toFixed(2)} N</strong><br>
+             Net Horizontal Imbalance: <strong>${calc.horizontalImbalance.toFixed(2)} N</strong></p>
+          <p style="margin-top: 0.4rem;"><strong>Vertical Balance (ΣF<sub>y</sub> = 0):</strong><br>
+             T₁y = ${eq.t1.toFixed(2)} · sin(${th1.toFixed(1)}°) = <strong>${calc.t1y.toFixed(2)} N</strong><br>
+             T₂y = ${eq.t2.toFixed(2)} · sin(${th2.toFixed(1)}°) = <strong>${calc.t2y.toFixed(2)} N</strong><br>
+             Total Upward Support (F<sub>g</sub>): <strong>${calc.totalUpwardForce.toFixed(2)} N</strong></p>
+          <p style="margin-top: 0.4rem; font-size: 0.95rem;"><strong>Calculated Hanging Mass:</strong><br>
+             <span class="math-expr">m = F<sub>g</sub> / g = ${calc.totalUpwardForce.toFixed(2)} / 9.80 = <strong>${calc.calculatedMassKg.toFixed(3)} kg (${calc.calculatedMassG.toFixed(1)} g)</strong></span><br>
+             Percent Error: <strong>${pErr}%</strong></p>
         </div>
       `;
     }
@@ -773,7 +793,7 @@
       if (w < 10 || h < 10) return;
 
       ctx.save();
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
 
       // 1. Grid & Table
@@ -1343,7 +1363,7 @@
       if (w < 10 || h < 10) return;
 
       ctx.save();
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
 
       const cX = w / 2;
@@ -1382,6 +1402,7 @@
       const fgY = cY - eq.fgy * scale;
       drawArrow(ctx, cX, cY, cX, fgY, 9, '#dc2626', 2.8);
 
+      // Dashed Projections
       ctx.setLineDash([3, 3]);
       ctx.strokeStyle = 'rgba(15, 126, 155, 0.4)';
       ctx.beginPath();
@@ -1407,8 +1428,9 @@
       ctx.textAlign = 'left';
       ctx.fillText(`T₂ = ${eq.t2.toFixed(2)} N`, t2X + 5, t2Y - 4);
 
+      // Conceptual gravity label only - NO spoiled numerical Fg or mass!
       ctx.fillStyle = '#dc2626';
-      ctx.fillText(`Fg = ${eq.fg.toFixed(2)} N`, cX + 6, fgY);
+      ctx.fillText('Fg (Weight)', cX + 6, fgY);
 
       ctx.restore();
     }
@@ -1424,7 +1446,7 @@
       if (w < 10 || h < 10) return;
 
       ctx.save();
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
 
       const eq = this.equilibrium;
@@ -1454,8 +1476,9 @@
       ctx.fillStyle = '#d67b19';
       ctx.fillText(`T₂ = ${eq.t2.toFixed(2)} N`, (tip1X + tip2X) / 2 + 8, (tip1Y + tip2Y) / 2);
 
+      // Conceptual gravity label only - NO numerical Fg
       ctx.fillStyle = '#dc2626';
-      ctx.fillText(`Fg = ${eq.fg.toFixed(2)} N`, tip2X + 6, (tip2Y + startY) / 2);
+      ctx.fillText('Fg = m·g', tip2X + 6, (tip2Y + startY) / 2);
 
       ctx.fillStyle = '#64748b';
       ctx.font = '9.5px Inter, sans-serif';
