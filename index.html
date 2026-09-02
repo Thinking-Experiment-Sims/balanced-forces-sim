@@ -140,7 +140,10 @@
             </button>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-ghost" id="btnExportDiagram" title="Print or save diagram for measuring with a physical protractor">
+              🖨️ Export / Print Diagram
+            </button>
             <button class="btn btn-accent" id="btnRecordTrial">
               📋 Log Current Trial
             </button>
@@ -351,6 +354,99 @@
       </p>
     </footer>
   </div>
+
+  <!-- Export / Print Diagram Modal Dialog -->
+  <div class="modal-backdrop" id="exportModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.25rem;">🖨️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; color: var(--ink);">Export Diagram for Real Protractor</h3>
+            <p style="margin: 0; font-size: 0.78rem; color: var(--muted);">Print or save the diagram to measure angles with a physical protractor on paper</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" id="btnCloseExportModal" title="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="export-preview-container">
+          <canvas id="exportCanvas" width="960" height="560"></canvas>
+        </div>
+        <div class="export-guidelines-box">
+          <div style="font-weight: 700; color: var(--primary-teal-dark); margin-bottom: 0.35rem; font-size: 0.85rem;">
+            📐 Instructions for Measuring on Paper:
+          </div>
+          <ol style="margin-left: 1.2rem; font-size: 0.8rem; color: var(--muted); line-height: 1.45;">
+            <li>Place the <strong>center hole/crosshair</strong> of your plastic protractor over the <strong>brass knot (P)</strong>.</li>
+            <li>Align the protractor's <strong>0°–180° baseline</strong> with the <strong>dashed horizontal line</strong>.</li>
+            <li>Use the extended ray lines along each cord to read <strong>θ₁</strong> (left angle) and <strong>θ₂</strong> (right angle).</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btnDownloadPNG">
+          💾 Save Image (PNG)
+        </button>
+        <button class="btn btn-primary" id="btnPrintSheet">
+          🖨️ Print Lab Worksheet
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Printable Worksheet (Formatted strictly for 8.5" x 11" Paper Measurement) -->
+  <section class="printable-worksheet" id="printableWorksheet" aria-hidden="true">
+    <div class="worksheet-header">
+      <div>
+        <h2 style="font-size: 1.35rem; color: #000000; margin-bottom: 0.2rem; font-family: 'Inter', sans-serif;">
+          The Thinking Experiment &bull; Balanced Forces Lab
+        </h2>
+        <p style="font-size: 0.88rem; color: #333333; margin: 0;">
+          2D Concurrent Statics &bull; Physical Protractor Angle Measurement Worksheet
+        </p>
+      </div>
+      <div class="worksheet-meta-box">
+        <div><strong>Name:</strong> ___________________________________</div>
+        <div style="margin-top: 0.35rem;"><strong>Date:</strong> ________________ <strong>Period:</strong> _______</div>
+      </div>
+    </div>
+
+    <div class="worksheet-sensor-summary">
+      <div><strong>Setup:</strong> <span id="printSetupTitle">1. Symmetric Balanced Forces</span></div>
+      <div><strong>Force Sensor 1 (T₁):</strong> <span id="printValT1" style="font-weight: 700;">-- N</span></div>
+      <div><strong>Force Sensor 2 (T₂):</strong> <span id="printValT2" style="font-weight: 700;">-- N</span></div>
+    </div>
+
+    <div class="worksheet-diagram-card">
+      <img id="printDiagramImg" alt="Balanced Forces Lab Diagram" style="width: 100%; display: block; border: 1px solid #777777; border-radius: 4px;">
+    </div>
+
+    <div class="worksheet-instructions-box">
+      <strong>Lab Measurement Instructions:</strong> Align the center index mark of your physical transparent protractor directly over the <strong>brass knot (P)</strong> and align its 0°–180° baseline with the <strong>dashed horizontal line</strong>. Measure angles <strong>θ₁</strong> and <strong>θ₂</strong> above horizontal, then complete the component resolution below to calculate the hanging mass.
+    </div>
+
+    <div class="worksheet-calc-grid">
+      <div class="worksheet-box">
+        <div class="worksheet-box-title">1. Protractor Measurements</div>
+        <div style="margin: 0.5rem 0;">Measured <strong>θ₁</strong> = ___________________ °</div>
+        <div style="margin: 0.5rem 0;">Measured <strong>θ₂</strong> = ___________________ °</div>
+      </div>
+      <div class="worksheet-box">
+        <div class="worksheet-box-title">2. Component Resolution</div>
+        <div style="margin: 0.4rem 0;">T₁y = T₁ · sin(θ₁) = _________________ N</div>
+        <div style="margin: 0.4rem 0;">T₂y = T₂ · sin(θ₂) = _________________ N</div>
+        <div style="margin: 0.4rem 0;">ΣFy = T₁y + T₂y = _________________ N</div>
+      </div>
+      <div class="worksheet-box">
+        <div class="worksheet-box-title">3. Mass Determination</div>
+        <div style="margin: 0.4rem 0;">Fg = ΣFy = _________________ N</div>
+        <div style="margin: 0.4rem 0;">m = Fg / 9.80 N/kg = ______________ kg</div>
+        <div style="margin: 0.4rem 0;">Calculated Mass = <strong>______________ g</strong></div>
+      </div>
+    </div>
+  </section>
 
   <!-- Scripts (Loaded in exact order for zero-CORS local & web compatibility) -->
   <script src="src/balancedForcesPhysics.js"></script>

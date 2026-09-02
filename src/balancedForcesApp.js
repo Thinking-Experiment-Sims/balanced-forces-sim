@@ -94,7 +94,19 @@
         wbTheta1: document.getElementById('wbTheta1'),
         wbTheta2: document.getElementById('wbTheta2'),
         btnSolveWorkbench: document.getElementById('btnSolveWorkbench'),
-        workbenchResults: document.getElementById('workbenchResults')
+        workbenchResults: document.getElementById('workbenchResults'),
+
+        // Export & Print Elements
+        btnExportDiagram: document.getElementById('btnExportDiagram'),
+        exportModal: document.getElementById('exportModal'),
+        btnCloseExportModal: document.getElementById('btnCloseExportModal'),
+        exportCanvas: document.getElementById('exportCanvas'),
+        btnDownloadPNG: document.getElementById('btnDownloadPNG'),
+        btnPrintSheet: document.getElementById('btnPrintSheet'),
+        printDiagramImg: document.getElementById('printDiagramImg'),
+        printSetupTitle: document.getElementById('printSetupTitle'),
+        printValT1: document.getElementById('printValT1'),
+        printValT2: document.getElementById('printValT2')
       };
 
       // State (Normalized Coordinates for Resolution Independence)
@@ -390,6 +402,35 @@
         this.dom.btnSolveWorkbench.addEventListener('click', () => this.solveForceTable());
       }
 
+      // Export & Print Diagram
+      if (this.dom.btnExportDiagram) {
+        this.dom.btnExportDiagram.addEventListener('click', () => this.openExportModal());
+      }
+
+      if (this.dom.btnCloseExportModal) {
+        this.dom.btnCloseExportModal.addEventListener('click', () => this.closeExportModal());
+      }
+
+      if (this.dom.btnDownloadPNG) {
+        this.dom.btnDownloadPNG.addEventListener('click', () => this.downloadDiagramPNG());
+      }
+
+      if (this.dom.btnPrintSheet) {
+        this.dom.btnPrintSheet.addEventListener('click', () => this.printWorksheet());
+      }
+
+      if (this.dom.exportModal) {
+        this.dom.exportModal.addEventListener('click', (e) => {
+          if (e.target === this.dom.exportModal) this.closeExportModal();
+        });
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.dom.exportModal && this.dom.exportModal.classList.contains('active')) {
+          this.closeExportModal();
+        }
+      });
+
       // Tab Navigation
       document.querySelectorAll('.analysis-tab-btn').forEach(tabBtn => {
         tabBtn.addEventListener('click', () => {
@@ -619,6 +660,392 @@
       navigator.clipboard.writeText(text).then(() => {
         alert('Data copied in tab-separated format! Paste into Google Sheets or Excel.');
       });
+    }
+
+    openExportModal() {
+      if (!this.dom.exportModal || !this.dom.exportCanvas) return;
+
+      this.dom.exportModal.classList.add('active');
+      this.dom.exportModal.setAttribute('aria-hidden', 'false');
+
+      const canvas = this.dom.exportCanvas;
+      const ctx = canvas.getContext('2d');
+      this.drawExportDiagram(ctx, canvas.width, canvas.height);
+
+      // Generate image for printable worksheet
+      if (this.dom.printDiagramImg) {
+        this.dom.printDiagramImg.src = canvas.toDataURL('image/png');
+      }
+
+      // Update printable sheet metadata
+      const eq = this.equilibrium;
+      if (eq) {
+        if (this.dom.printValT1) this.dom.printValT1.textContent = `${eq.t1.toFixed(2)} N`;
+        if (this.dom.printValT2) this.dom.printValT2.textContent = `${eq.t2.toFixed(2)} N`;
+      }
+      if (this.dom.printSetupTitle && this.dom.bannerTitle) {
+        this.dom.printSetupTitle.textContent = this.dom.bannerTitle.textContent;
+      }
+    }
+
+    closeExportModal() {
+      if (!this.dom.exportModal) return;
+      this.dom.exportModal.classList.remove('active');
+      this.dom.exportModal.setAttribute('aria-hidden', 'true');
+    }
+
+    downloadDiagramPNG() {
+      if (!this.dom.exportCanvas) return;
+      const dataUrl = this.dom.exportCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `balanced_forces_lab_diagram_${this.state.activeScenario}.png`;
+      link.href = dataUrl;
+      link.click();
+    }
+
+    printWorksheet() {
+      this.openExportModal();
+      setTimeout(() => {
+        window.print();
+      }, 150);
+    }
+
+    drawExportDiagram(ctx, w, h) {
+      const eq = this.equilibrium;
+      if (!eq) return;
+
+      ctx.save();
+      // Pure white paper background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+
+      // Clean border frame
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, w - 2, h - 2);
+
+      // Top title and telemetry banner
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(2, 2, w - 4, 60);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(2, 62);
+      ctx.lineTo(w - 2, 62);
+      ctx.stroke();
+
+      ctx.fillStyle = '#0f7e9b';
+      ctx.font = 'bold 15px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('The Thinking Experiment: Balanced Forces 2D Statics Lab Rig', 20, 26);
+
+      ctx.fillStyle = '#334155';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText(`Left Force Sensor (T₁) = ${eq.t1.toFixed(2)} N   |   Right Force Sensor (T₂) = ${eq.t2.toFixed(2)} N   |   Scenario: ${this.state.activeScenario.toUpperCase()}`, 20, 48);
+
+      // Physical Coordinates scaled to export canvas
+      const s1 = { x: w * 0.18, y: h * 0.28 };
+      const s2 = { x: w * 0.82, y: h * 0.28 };
+      const p = { x: w * this.state.normKnotX, y: h * this.state.normKnotY };
+
+      // Tabletop Base
+      const tableY = h * 0.88;
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(10, tableY, w - 20, h - tableY - 10);
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(10, tableY);
+      ctx.lineTo(w - 10, tableY);
+      ctx.stroke();
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'italic 10px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('Lab Tabletop Base', w - 20, tableY + 16);
+
+      // Draw Ring Stands
+      const rodTopY = h * 0.14;
+      const drawStand = (standX, clampY, isLeft) => {
+        // Base plate
+        ctx.fillStyle = '#475569';
+        drawRoundedRect(ctx, standX - 40, tableY - 14, 80, 14, 3, true, true);
+        ctx.strokeStyle = '#1e293b';
+        ctx.stroke();
+
+        // Rod
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(standX - 5, rodTopY, 10, tableY - rodTopY - 14);
+        ctx.strokeRect(standX - 5, rodTopY, 10, tableY - rodTopY - 14);
+
+        // Cap
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.arc(standX, rodTopY, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Clamp
+        ctx.fillStyle = '#0f7e9b';
+        drawRoundedRect(ctx, standX - 12, clampY - 12, 24, 24, 3, true, true);
+      };
+
+      const stand1X = s1.x - 28;
+      const stand2X = s2.x + 28;
+      drawStand(stand1X, s1.y, true);
+      drawStand(stand2X, s2.y, false);
+
+      // Support Extension Arms
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(stand1X, s1.y);
+      ctx.lineTo(s1.x, s1.y);
+      ctx.moveTo(stand2X, s2.y);
+      ctx.lineTo(s2.x, s2.y);
+      ctx.stroke();
+
+      // Extended Ray Lines for Protractor Alignment (Extending through clamps and beyond)
+      const ray1Angle = Math.atan2(s1.y - p.y, s1.x - p.x);
+      const ray1Len = Math.hypot(s1.x - p.x, s1.y - p.y) + 90;
+      const ray1EndX = p.x + ray1Len * Math.cos(ray1Angle);
+      const ray1EndY = p.y + ray1Len * Math.sin(ray1Angle);
+
+      const ray2Angle = Math.atan2(s2.y - p.y, s2.x - p.x);
+      const ray2Len = Math.hypot(s2.x - p.x, s2.y - p.y) + 90;
+      const ray2EndX = p.x + ray2Len * Math.cos(ray2Angle);
+      const ray2EndY = p.y + ray2Len * Math.sin(ray2Angle);
+
+      // Draw Extended Guideline Rays
+      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 1.8;
+
+      ctx.strokeStyle = '#0f7e9b';
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(ray1EndX, ray1EndY);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#d67b19';
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(ray2EndX, ray2EndY);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+
+      // Ray Labels at outer ends
+      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.fillStyle = '#0f7e9b';
+      ctx.textAlign = 'right';
+      ctx.fillText(`↖ Cord 1 Ray (Align Protractor for θ₁)`, ray1EndX - 6, ray1EndY - 6);
+
+      ctx.fillStyle = '#d67b19';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Cord 2 Ray (Align Protractor for θ₂) ↗`, ray2EndX + 6, ray2EndY - 6);
+
+      // Spring Scales
+      const drawExportScale = (anchor, tension, targetPoint, isLeft) => {
+        const dx = targetPoint.x - anchor.x;
+        const dy = targetPoint.y - anchor.y;
+        const angleRad = Math.atan2(dy, dx);
+
+        ctx.save();
+        ctx.translate(anchor.x, anchor.y);
+        ctx.rotate(angleRad);
+
+        // Barrel
+        const scaleLen = 76;
+        const barrelW = 22;
+        ctx.fillStyle = '#ffffff';
+        drawRoundedRect(ctx, 8, -barrelW / 2, scaleLen, barrelW, 4, true, true);
+        ctx.strokeStyle = isLeft ? '#0f7e9b' : '#d67b19';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        // Graduation ticks
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 1;
+        for (let n = 0; n <= 10; n += 2) {
+          const tx = 18 + (n / 10) * (scaleLen - 30);
+          ctx.beginPath();
+          ctx.moveTo(tx, -barrelW / 2 + 2);
+          ctx.lineTo(tx, -barrelW / 2 + 6);
+          ctx.stroke();
+        }
+
+        // Spring Deflection
+        const maxExtension = scaleLen - 30;
+        const extension = Math.min(maxExtension, (tension / 10) * maxExtension);
+        const indicatorX = 18 + extension;
+
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(18, 0);
+        for (let i = 0; i <= 7; i++) {
+          const cx = 18 + (i / 7) * extension;
+          const cy = (i % 2 === 0 ? -3 : 3);
+          ctx.lineTo(cx, cy);
+        }
+        ctx.lineTo(indicatorX, 0);
+        ctx.stroke();
+
+        // Red Indicator
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(indicatorX - 1.5, -barrelW / 2 + 2, 3, barrelW - 4);
+
+        // Hook
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(indicatorX, 0);
+        ctx.lineTo(8 + scaleLen + 8, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(8 + scaleLen + 12, 4, 4, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+
+        // Digital Value Badge
+        ctx.save();
+        ctx.rotate(-angleRad);
+        ctx.fillStyle = '#ffffff';
+        drawRoundedRect(ctx, -30, isLeft ? -46 : 26, 60, 24, 4, true, true);
+        ctx.strokeStyle = isLeft ? '#0f7e9b' : '#d67b19';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+        ctx.fillStyle = isLeft ? '#0f7e9b' : '#d67b19';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${tension.toFixed(2)} N`, 0, isLeft ? -34 : 38);
+        ctx.restore();
+
+        ctx.restore();
+      };
+
+      drawExportScale(s1, eq.t1, p, true);
+      drawExportScale(s2, eq.t2, p, false);
+
+      // Braided Cords
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.8;
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(s1.x, s1.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.moveTo(s2.x, s2.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x, p.y + 40);
+      ctx.stroke();
+
+      // Hanging Mass Hanger / Load
+      const topY = p.y + 40;
+      if (this.state.activeScenario === 'mystery') {
+        const boxW = 56;
+        const boxH = 68;
+        ctx.fillStyle = '#d67b19';
+        drawRoundedRect(ctx, p.x - boxW / 2, topY + 6, boxW, boxH, 6, true, true);
+        ctx.strokeStyle = '#b86510';
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 26px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('?', p.x, topY + 6 + boxH / 2 - 4);
+        ctx.font = 'bold 10px Inter, sans-serif';
+        ctx.fillText(`MASS ${this.state.currentMystery}`, p.x, topY + boxH - 6);
+      } else {
+        const massG = Math.round(this.state.massKg * 1000);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(p.x, topY + 4);
+        ctx.lineTo(p.x, topY + 64);
+        ctx.stroke();
+        drawRoundedRect(ctx, p.x - 24, topY + 64, 48, 6, 2, true, false);
+
+        // Stacked weights
+        const numDiscs = Math.max(1, Math.min(6, Math.ceil(massG / 150)));
+        for (let i = 0; i < numDiscs; i++) {
+          const discY = topY + 64 - (i + 1) * 11;
+          ctx.fillStyle = '#d67b19';
+          drawRoundedRect(ctx, p.x - 22, discY, 44, 10, 2, true, true);
+          ctx.strokeStyle = '#9a3412';
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#0f7e9b';
+        drawRoundedRect(ctx, p.x - 30, topY + 76, 60, 20, 3, true, false);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${massG} g`, p.x, topY + 86);
+      }
+
+      // Continuous Horizontal Baseline through Knot
+      ctx.save();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(25, p.y);
+      ctx.lineTo(w - 25, p.y);
+      ctx.stroke();
+      ctx.restore();
+
+      // Baseline labels
+      ctx.fillStyle = '#0f7e9b';
+      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('0° – 180° Horizontal Baseline (Align flat bottom of protractor along this line)', 30, p.y - 10);
+
+      // Knot Vertex Alignment Target (Crosshair & Circle)
+      ctx.save();
+      ctx.strokeStyle = '#d67b19';
+      ctx.fillStyle = 'rgba(214, 123, 25, 0.15)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(p.x - 24, p.y);
+      ctx.lineTo(p.x + 24, p.y);
+      ctx.moveTo(p.x, p.y - 24);
+      ctx.lineTo(p.x, p.y + 24);
+      ctx.stroke();
+
+      // Brass Knot
+      ctx.fillStyle = '#d67b19';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#9a3412';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Target Label
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✛ Place Protractor Center Index Here', p.x, p.y + 32);
+
+      // Angle indicator arcs (without numerical spoilers)
+      ctx.fillStyle = '#0f7e9b';
+      ctx.font = 'bold 13px Inter, sans-serif';
+      ctx.fillText('θ₁', p.x - 48, p.y - 12);
+
+      ctx.fillStyle = '#d67b19';
+      ctx.fillText('θ₂', p.x + 48, p.y - 12);
+
+      ctx.restore();
     }
 
     bindCanvasMouse() {
