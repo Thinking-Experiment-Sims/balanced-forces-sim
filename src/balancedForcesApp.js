@@ -133,7 +133,7 @@
 
       // State (Normalized Coordinates for Resolution Independence)
       this.state = {
-        activeScenario: 'symmetric',
+        activeScenario: 'lab',
         massKg: 0.500,
         g: 9.80,
 
@@ -500,10 +500,27 @@
         });
       }
 
-      // Preset Chips
-      document.querySelectorAll('.preset-chip').forEach(chip => {
+      // Center Knot Button
+      const btnCenter = document.getElementById('btnCenterKnot');
+      if (btnCenter) {
+        btnCenter.addEventListener('click', () => {
+          this.state.normKnotX = 0.50;
+          if (this.dom.sliderKnotX) this.dom.sliderKnotX.value = 50;
+          this.updateEquilibrium();
+          if (this.state.protractor.isSnapped) {
+            this.state.protractor.normX = 0.50;
+            this.state.protractor.normY = this.state.normKnotY;
+          }
+          this.triggerEquilibriumSettling(5);
+          this.render();
+        });
+      }
+
+      // Mass Preset Chips
+      document.querySelectorAll('.mass-preset-bar .preset-chip').forEach(chip => {
         chip.addEventListener('click', () => {
           const massG = parseFloat(chip.dataset.mass);
+          if (isNaN(massG)) return;
           this.state.massKg = massG / 1000;
           if (this.dom.sliderMass) this.dom.sliderMass.value = massG;
           this.updateMassPresetChips();
@@ -668,42 +685,20 @@
     }
 
     setScenario(scenarioId) {
+      // Backward compatibility aliases: map legacy tabs to 'lab'
+      if (scenarioId === 'symmetric' || scenarioId === 'asymmetric' || scenarioId === 'sandbox') {
+        scenarioId = 'lab';
+      }
       this.state.activeScenario = scenarioId;
 
-      if (scenarioId === 'symmetric') {
-        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '1. Symmetric Balanced Forces';
-        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'A load is suspended symmetrically between two stands. Use the protractor to measure the angles and read the spring scales.';
-        this.state.massKg = 0.500;
-        this.state.normKnotX = 0.50;
-        this.state.normKnotY = 0.58;
-        if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
-        if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
-      } else if (scenarioId === 'asymmetric') {
-        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '2. Asymmetric Setup';
-        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'The knot is shifted horizontally. Use the protractor to measure both cord angles and determine how tension is distributed.';
-        this.state.massKg = 0.600;
-        this.state.normKnotX = 0.38;
-        this.state.normKnotY = 0.58;
-        if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
-        if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
-      } else if (scenarioId === 'mystery') {
-        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '3. Mystery Mass Challenge';
-        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'The hanging mass is unknown. Measure cord tensions and angles with the protractor to determine the load.';
+      if (scenarioId === 'mystery') {
+        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '2. Mystery Mass Challenge:';
+        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'The hanging mass is an unknown load. Measure cord angles with the protractor and read the spring scales directly to determine the mystery mass.';
         this.state.normKnotX = 0.44;
-        this.state.normKnotY = 0.60;
         if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'block';
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'none';
-      } else if (scenarioId === 'sandbox') {
-        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '4. Custom Statics Sandbox';
-        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'Freely drag the brass knot on the canvas to set cord lengths and angles, and adjust hanging mass to explore any 2D statics setup.';
-        if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
-        if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
-      }
 
-      if (this.dom.sliderMass) this.dom.sliderMass.value = Math.round(this.state.massKg * 1000);
-
-      // Manage Force Badges Toggle & Visibility based on Scenario
-      if (scenarioId === 'mystery') {
+        // Manage Force Badges Toggle & Visibility based on Scenario (Strictly locked off in Mystery)
         if (this.dom.chkDials) {
           this.dom.chkDials.checked = false;
           this.dom.chkDials.disabled = true;
@@ -718,6 +713,13 @@
         }
         this.state.showSpringDials = false;
       } else {
+        // 'lab' mode (default 1. Statics Lab & Exploration)
+        if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '1. Statics Lab & Exploration:';
+        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'Freely adjust mass and position the knot (symmetric or asymmetric). Measure cord angles with the protractor and read forces from the sensors.';
+        if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
+        if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
+
+        // Manage Force Badges Toggle & Visibility based on Scenario
         if (this.dom.chkDials) {
           this.dom.chkDials.disabled = false;
           this.dom.chkDials.checked = true;
@@ -732,6 +734,8 @@
         }
         this.state.showSpringDials = true;
       }
+
+      if (this.dom.sliderMass) this.dom.sliderMass.value = Math.round(this.state.massKg * 1000);
 
       this.state.protractor.normX = this.state.normKnotX;
       this.state.protractor.normY = this.state.normKnotY;

@@ -41,17 +41,15 @@
 
     <!-- Compact Scenario & Mode Strip -->
     <section class="scenario-strip" aria-label="Scenario Selection and Guidance">
-      <nav class="scenario-nav" aria-label="Balanced Forces Scenarios">
-        <button class="scenario-tab active" data-scenario="symmetric">⚖️ 1. Symmetric</button>
-        <button class="scenario-tab" data-scenario="asymmetric">📐 2. Asymmetric</button>
-        <button class="scenario-tab" data-scenario="mystery">🧪 3. Mystery Mass</button>
-        <button class="scenario-tab" data-scenario="sandbox">⚙️ 4. Sandbox</button>
+      <nav class="scenario-nav" aria-label="Balanced Forces Modes">
+        <button class="scenario-tab active" data-scenario="lab">⚖️ 1. Statics Lab &amp; Exploration</button>
+        <button class="scenario-tab" data-scenario="mystery">🧪 2. Mystery Mass Challenge</button>
       </nav>
 
       <div class="scenario-meta-line">
         <div class="scenario-caption">
-          <strong id="bannerTitle" style="color: var(--primary-teal-dark);">1. Symmetric Balanced Forces:</strong>
-          <span id="bannerDesc">A load is suspended symmetrically between two stands. Use the protractor to measure the angles and read the spring scales.</span>
+          <strong id="bannerTitle" style="color: var(--primary-teal-dark);">1. Statics Lab &amp; Exploration:</strong>
+          <span id="bannerDesc">Freely adjust mass and position the knot (symmetric or asymmetric). Measure cord angles with the protractor and read forces from the sensors.</span>
         </div>
         <div class="mode-explanation-strip" id="modeExplanation">
           <span id="modeDescText"><strong>Ideal Scenario:</strong> Textbook inextensible cords (ΣF<sub>x</sub> = 0 N). Toggle Real Lab Mode for spring stretch &amp; scale uncertainty.</span>
@@ -94,7 +92,10 @@
           <div class="control-box" id="knotXControlItem">
             <div class="control-header">
               <label for="sliderKnotX">Knot Position (<span class="math-expr">X</span>):</label>
-              <strong id="valKnotX" style="color: var(--primary-teal-dark);">50% (Center)</strong>
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <strong id="valKnotX" style="color: var(--primary-teal-dark);">50% (Center)</strong>
+                <button type="button" class="preset-chip" id="btnCenterKnot" style="padding: 0.1rem 0.45rem; font-size: 0.68rem;" title="Snap knot horizontally to exact center (50%)">🎯 Center</button>
+              </div>
             </div>
             <input type="range" class="range-slider" id="sliderKnotX" min="28" max="72" step="0.5" value="50">
             <div class="geometry-status-line">
