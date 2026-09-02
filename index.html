@@ -24,14 +24,16 @@
           </p>
         </div>
         <div class="hero-meta-badges">
-          <!-- Simulation Mode Switcher Pill -->
-          <div class="mode-switcher-pill" id="modeSelectorCard" title="Toggle between Ideal Textbook Model and Real Laboratory Mode with spring stretch and scale uncertainty">
-            <label class="mode-toggle-label">
-              <input type="checkbox" id="chkRealLabMode">
-              <span class="mode-toggle-slider"></span>
-              <span class="mode-toggle-text">🔬 Real Lab Mode</span>
-            </label>
-            <span class="mode-status-badge" id="modeBadge">Ideal Scenario</span>
+          <!-- Simulation Mode Segmented Switcher -->
+          <div class="mode-segmented-control" id="modeSelectorCard" role="group" aria-label="Simulation Mode">
+            <button type="button" class="mode-segment-btn active" id="btnModeIdeal" title="Ideal Textbook Scenario: exact digital values & inextensible strings">
+              📘 Ideal Scenario
+            </button>
+            <button type="button" class="mode-segment-btn" id="btnModeReal" title="Real Lab Mode: Hooke's Law spring scale stretch & reading uncertainty">
+              🔬 Real Lab Mode
+            </button>
+            <input type="checkbox" id="chkRealLabMode" style="display: none;">
+            <span id="modeBadge" style="display: none;">Ideal Scenario</span>
           </div>
         </div>
       </div>
@@ -76,7 +78,8 @@
           <!-- Mass Control -->
           <div class="control-box" id="massControlItem">
             <div class="control-header">
-              <label>Hanging Mass: <strong id="valMass" style="color: var(--primary-teal-dark);">500 g</strong></label>
+              <label for="sliderMass">Hanging Mass:</label>
+              <strong id="valMass" style="color: var(--primary-teal-dark);">500 g</strong>
             </div>
             <input type="range" class="range-slider" id="sliderMass" min="50" max="1000" step="25" value="500">
             <div class="mass-preset-bar">
@@ -90,7 +93,8 @@
           <!-- Knot Horizontal Position (X) Control -->
           <div class="control-box" id="knotXControlItem">
             <div class="control-header">
-              <label for="sliderKnotX">Knot Position (<span class="math-expr">X</span>): <strong id="valKnotX" style="color: var(--primary-teal-dark);">50% (Center)</strong></label>
+              <label for="sliderKnotX">Knot Position (<span class="math-expr">X</span>):</label>
+              <strong id="valKnotX" style="color: var(--primary-teal-dark);">50% (Center)</strong>
             </div>
             <input type="range" class="range-slider" id="sliderKnotX" min="28" max="72" step="0.5" value="50">
             <div class="geometry-status-line">
@@ -129,9 +133,9 @@
               <input type="checkbox" id="chkLevel" checked>
               <span>Level Lines</span>
             </label>
-            <label class="toggle-label compact-toggle" title="Show sensor digital force badges">
+            <label class="toggle-label compact-toggle" id="chkDialsWrapper" title="Show sensor digital force badges">
               <input type="checkbox" id="chkDials" checked>
-              <span>Badges</span>
+              <span id="chkDialsText">Badges</span>
             </label>
           </div>
 

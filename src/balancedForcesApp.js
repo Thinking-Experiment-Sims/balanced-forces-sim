@@ -115,13 +115,20 @@
         printValT2: document.getElementById('printValT2'),
 
         // Simulation Mode Elements
+        btnModeIdeal: document.getElementById('btnModeIdeal'),
+        btnModeReal: document.getElementById('btnModeReal'),
         chkRealLabMode: document.getElementById('chkRealLabMode'),
         modeSelectorCard: document.getElementById('modeSelectorCard'),
         modeBadge: document.getElementById('modeBadge'),
         modeDescText: document.getElementById('modeDescText'),
         realLabForceInputsRow: document.getElementById('realLabForceInputsRow'),
         wbForce1: document.getElementById('wbForce1'),
-        wbForce2: document.getElementById('wbForce2')
+        wbForce2: document.getElementById('wbForce2'),
+
+        // Badges Wrapper
+        chkDials: document.getElementById('chkDials'),
+        chkDialsWrapper: document.getElementById('chkDialsWrapper'),
+        chkDialsText: document.getElementById('chkDialsText')
       };
 
       // State (Normalized Coordinates for Resolution Independence)
@@ -332,12 +339,15 @@
       const eq = this.equilibrium;
       if (!eq) return;
 
-      // Forces Display (Ideal = exact digital readout; Real Lab = read from graduated scale)
-      if (this.state.isRealLabMode) {
+      // Forces Display (Mystery Mass & Real Lab = read from graduated scale; Ideal = exact digital readout)
+      if (this.state.activeScenario === 'mystery') {
+        if (this.dom.telemT1) this.dom.telemT1.innerHTML = `<span style="font-size: 0.88rem; color: var(--accent-amber-dark); font-weight: 700;">🔍 Read Scale</span>`;
+        if (this.dom.telemT2) this.dom.telemT2.innerHTML = `<span style="font-size: 0.88rem; color: var(--accent-amber-dark); font-weight: 700;">🔍 Read Scale</span>`;
+      } else if (this.state.isRealLabMode) {
         const estT1 = (Math.round(eq.t1 * 10) / 10).toFixed(1);
         const estT2 = (Math.round(eq.t2 * 10) / 10).toFixed(1);
-        if (this.dom.telemT1) this.dom.telemT1.innerHTML = `<span style="font-size: 0.9rem; color: var(--accent-amber-dark);">Read Scale (~${estT1} N)</span>`;
-        if (this.dom.telemT2) this.dom.telemT2.innerHTML = `<span style="font-size: 0.9rem; color: var(--accent-amber-dark);">Read Scale (~${estT2} N)</span>`;
+        if (this.dom.telemT1) this.dom.telemT1.innerHTML = `<span style="font-size: 0.88rem; color: var(--accent-amber-dark);">Read Scale (~${estT1} N)</span>`;
+        if (this.dom.telemT2) this.dom.telemT2.innerHTML = `<span style="font-size: 0.88rem; color: var(--accent-amber-dark);">Read Scale (~${estT2} N)</span>`;
       } else {
         if (this.dom.telemT1) this.dom.telemT1.textContent = `${eq.t1.toFixed(2)} N`;
         if (this.dom.telemT2) this.dom.telemT2.textContent = `${eq.t2.toFixed(2)} N`;
@@ -390,15 +400,17 @@
 
     updateModeUI() {
       const isReal = this.state.isRealLabMode;
+      if (this.dom.btnModeIdeal) {
+        this.dom.btnModeIdeal.classList.toggle('active', !isReal);
+      }
+      if (this.dom.btnModeReal) {
+        this.dom.btnModeReal.classList.toggle('active', isReal);
+      }
       if (this.dom.chkRealLabMode) {
         this.dom.chkRealLabMode.checked = isReal;
       }
       if (this.dom.modeSelectorCard) {
         this.dom.modeSelectorCard.classList.toggle('real-mode', isReal);
-      }
-      if (this.dom.modeBadge) {
-        this.dom.modeBadge.classList.toggle('real', isReal);
-        this.dom.modeBadge.textContent = isReal ? '🔬 Real Lab Mode' : 'Ideal Scenario';
       }
       if (this.dom.modeDescText) {
         if (isReal) {
@@ -421,7 +433,26 @@
     }
 
     bindEvents() {
-      // Real Lab Mode Checkbox
+      // Segmented Mode Buttons
+      if (this.dom.btnModeIdeal) {
+        this.dom.btnModeIdeal.addEventListener('click', () => {
+          this.state.isRealLabMode = false;
+          this.updateModeUI();
+          this.updateEquilibrium();
+          this.render();
+        });
+      }
+
+      if (this.dom.btnModeReal) {
+        this.dom.btnModeReal.addEventListener('click', () => {
+          this.state.isRealLabMode = true;
+          this.updateModeUI();
+          this.updateEquilibrium();
+          this.render();
+        });
+      }
+
+      // Real Lab Mode Checkbox (fallback)
       if (this.dom.chkRealLabMode) {
         this.dom.chkRealLabMode.addEventListener('change', (e) => {
           this.state.isRealLabMode = e.target.checked;
@@ -671,6 +702,37 @@
 
       if (this.dom.sliderMass) this.dom.sliderMass.value = Math.round(this.state.massKg * 1000);
 
+      // Manage Force Badges Toggle & Visibility based on Scenario
+      if (scenarioId === 'mystery') {
+        if (this.dom.chkDials) {
+          this.dom.chkDials.checked = false;
+          this.dom.chkDials.disabled = true;
+        }
+        if (this.dom.chkDialsWrapper) {
+          this.dom.chkDialsWrapper.style.opacity = '0.5';
+          this.dom.chkDialsWrapper.style.pointerEvents = 'none';
+          this.dom.chkDialsWrapper.title = 'Force badges disabled in Mystery Mass challenge — students must read the scales!';
+        }
+        if (this.dom.chkDialsText) {
+          this.dom.chkDialsText.textContent = 'Badges (Locked Off)';
+        }
+        this.state.showSpringDials = false;
+      } else {
+        if (this.dom.chkDials) {
+          this.dom.chkDials.disabled = false;
+          this.dom.chkDials.checked = true;
+        }
+        if (this.dom.chkDialsWrapper) {
+          this.dom.chkDialsWrapper.style.opacity = '1';
+          this.dom.chkDialsWrapper.style.pointerEvents = 'auto';
+          this.dom.chkDialsWrapper.title = 'Show sensor digital force badges';
+        }
+        if (this.dom.chkDialsText) {
+          this.dom.chkDialsText.textContent = 'Badges';
+        }
+        this.state.showSpringDials = true;
+      }
+
       this.state.protractor.normX = this.state.normKnotX;
       this.state.protractor.normY = this.state.normKnotY;
       this.state.protractor.rotationDeg = 0;
@@ -901,9 +963,10 @@
 
       // Update printable sheet metadata
       const eq = this.equilibrium;
+      const isMystery = this.state.activeScenario === 'mystery';
       if (eq) {
-        if (this.dom.printValT1) this.dom.printValT1.textContent = `${eq.t1.toFixed(2)} N`;
-        if (this.dom.printValT2) this.dom.printValT2.textContent = `${eq.t2.toFixed(2)} N`;
+        if (this.dom.printValT1) this.dom.printValT1.textContent = isMystery ? '[Read Scale]' : `${eq.t1.toFixed(2)} N`;
+        if (this.dom.printValT2) this.dom.printValT2.textContent = isMystery ? '[Read Scale]' : `${eq.t2.toFixed(2)} N`;
       }
       if (this.dom.printSetupTitle && this.dom.bannerTitle) {
         this.dom.printSetupTitle.textContent = this.dom.bannerTitle.textContent;
@@ -926,17 +989,17 @@
     }
 
     printWorksheet() {
-      this.openExportModal();
-      setTimeout(() => {
-        window.print();
-      }, 150);
+      window.print();
     }
 
     drawExportDiagram(ctx, w, h) {
       const eq = this.equilibrium;
       if (!eq) return;
 
-      ctx.save();
+      const isReal = this.state.isRealLabMode;
+      const isMystery = this.state.activeScenario === 'mystery';
+
+      ctx.clearRect(0, 0, w, h);
       // Pure white paper background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, w, h);
@@ -963,7 +1026,9 @@
 
       ctx.fillStyle = '#334155';
       ctx.font = '12px Inter, sans-serif';
-      ctx.fillText(`Left Force Sensor (T₁) = ${eq.t1.toFixed(2)} N   |   Right Force Sensor (T₂) = ${eq.t2.toFixed(2)} N   |   Scenario: ${this.state.activeScenario.toUpperCase()}`, 20, 48);
+      const t1Str = isMystery ? '[Read Scale]' : `${eq.t1.toFixed(2)} N`;
+      const t2Str = isMystery ? '[Read Scale]' : `${eq.t2.toFixed(2)} N`;
+      ctx.fillText(`Left Force Sensor (T₁) = ${t1Str}   |   Right Force Sensor (T₂) = ${t2Str}   |   Scenario: ${this.state.activeScenario.toUpperCase()}`, 20, 48);
 
       // Physical Coordinates scaled to export canvas
       const s1 = { x: w * 0.20, y: h * 0.28 };
@@ -1691,7 +1756,9 @@
         ctx.stroke();
 
         // Digital Sensor Force Badge (shown in Ideal Mode, or in Real Lab Mode if vertical zoom is disabled)
-        if (this.state.showSpringDials && (!this.state.isRealLabMode || !this.state.showZoomScales)) {
+        // STRICT: Never shown with numerical forces in Mystery Mass challenge!
+        const isMystery = this.state.activeScenario === 'mystery';
+        if (this.state.showSpringDials && !isMystery && (!this.state.isRealLabMode || !this.state.showZoomScales)) {
           ctx.save();
           ctx.rotate(-angleRad);
           ctx.fillStyle = '#ffffff';
@@ -1705,7 +1772,7 @@
           ctx.font = 'bold 9.5px Inter, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          if (this.state.isRealLabMode) {
+          if (this.state.isRealLabMode || isMystery) {
             ctx.fillText('Read Scale', 0, isLeft ? -31 : 35);
           } else {
             ctx.fillText(`${tension.toFixed(2)} N`, 0, isLeft ? -31 : 35);
@@ -1852,12 +1919,13 @@
       ctx.closePath();
       ctx.fill();
 
-      // Footer Readout
-      ctx.fillStyle = this.state.isRealLabMode ? '#b06210' : themeColor;
+      // Footer Readout (forces reading from graduated scale in Mystery Mass & Real Lab Mode)
+      const isMystery = this.state.activeScenario === 'mystery';
+      ctx.fillStyle = (this.state.isRealLabMode || isMystery) ? '#b06210' : themeColor;
       ctx.font = 'bold 8.5px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      if (this.state.isRealLabMode) {
+      if (this.state.isRealLabMode || isMystery) {
         ctx.fillText('Read Red Line', x + width / 2, y + height - 10);
       } else {
         ctx.fillText(`${tension.toFixed(2)} N`, x + width / 2, y + height - 10);

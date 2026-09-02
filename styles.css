@@ -161,41 +161,46 @@ body {
   align-items: center;
 }
 
-/* Compact Mode Switcher Pill */
-.mode-switcher-pill {
-  display: flex;
+/* Simulation Mode Segmented Switcher */
+.mode-segmented-control {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
   background: #ffffff;
-  padding: 0.35rem 0.75rem;
+  padding: 3px;
   border-radius: 999px;
-  border: 1.5px solid var(--primary-teal-border);
+  border: 1.5px solid var(--border);
   box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
+  gap: 3px;
 }
 
-.mode-switcher-pill.real-mode {
-  border-color: var(--accent-amber);
-  background: #fdfaf6;
-  box-shadow: 0 2px 10px rgba(214, 123, 25, 0.15);
-}
-
-.mode-toggle-label {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  cursor: pointer;
-  user-select: none;
-  font-size: 0.82rem;
+.mode-segment-btn {
+  background: transparent;
+  border: none;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
   font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.mode-segment-btn:hover {
   color: var(--ink);
 }
 
-.mode-toggle-label input[type="checkbox"] {
-  width: 1.1rem;
-  height: 1.1rem;
-  accent-color: var(--accent-amber);
-  cursor: pointer;
+.mode-segment-btn.active#btnModeIdeal {
+  background: var(--primary-teal);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(15, 126, 155, 0.25);
+}
+
+.mode-segment-btn.active#btnModeReal {
+  background: var(--accent-amber);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(214, 123, 25, 0.25);
 }
 
 /* Scenario & Guidance Strip */
@@ -573,13 +578,21 @@ canvas {
   gap: 0.25rem;
 }
 
+.control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+}
+
 .control-header label {
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--ink);
-  display: flex;
-  justify-content: space-between;
+  display: inline-flex;
   align-items: baseline;
+  gap: 0;
+  white-space: nowrap;
 }
 
 .geometry-status-line {
