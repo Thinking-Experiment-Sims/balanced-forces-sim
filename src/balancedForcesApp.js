@@ -71,10 +71,10 @@
         massControlItem: document.getElementById('massControlItem'),
         sliderMass: document.getElementById('sliderMass'),
         valMass: document.getElementById('valMass'),
-        sliderKnotX: document.getElementById('sliderKnotX'),
-        valKnotX: document.getElementById('valKnotX'),
-        sliderKnotY: document.getElementById('sliderKnotY'),
-        valKnotY: document.getElementById('valKnotY'),
+        valLen1: document.getElementById('valLen1'),
+        valLen2: document.getElementById('valLen2'),
+        meterLen1: document.getElementById('meterLen1'),
+        meterLen2: document.getElementById('meterLen2'),
         telemT1: document.getElementById('telemT1'),
         telemT2: document.getElementById('telemT2'),
         telemKnotPos: document.getElementById('telemKnotPos'),
@@ -243,11 +243,20 @@
         }
       }
 
-      if (this.dom.valKnotX) {
-        this.dom.valKnotX.textContent = `${Math.round(this.state.normKnotX * 100)}%`;
+      // Cord Lengths in cm (calibrated to the 3.5 px/mm = 35 px/cm metric ruler)
+      const len1Cm = (eq.geometry.len1 / 35).toFixed(1);
+      const len2Cm = (eq.geometry.len2 / 35).toFixed(1);
+
+      if (this.dom.valLen1) this.dom.valLen1.textContent = `${len1Cm} cm`;
+      if (this.dom.valLen2) this.dom.valLen2.textContent = `${len2Cm} cm`;
+
+      if (this.dom.meterLen1) {
+        const pct1 = Math.max(15, Math.min(95, (parseFloat(len1Cm) / 75) * 100));
+        this.dom.meterLen1.style.width = `${pct1}%`;
       }
-      if (this.dom.valKnotY) {
-        this.dom.valKnotY.textContent = `${Math.round(this.state.normKnotY * 100)}%`;
+      if (this.dom.meterLen2) {
+        const pct2 = Math.max(15, Math.min(95, (parseFloat(len2Cm) / 75) * 100));
+        this.dom.meterLen2.style.width = `${pct2}%`;
       }
     }
 
@@ -283,28 +292,6 @@
         });
       });
 
-      // Knot X & Y Sliders (Percentages)
-      if (this.dom.sliderKnotX) {
-        this.dom.sliderKnotX.addEventListener('input', (e) => {
-          this.state.normKnotX = parseFloat(e.target.value) / 100;
-          if (this.state.protractor.isSnapped) {
-            this.state.protractor.normX = this.state.normKnotX;
-          }
-          this.updateEquilibrium();
-          this.render();
-        });
-      }
-
-      if (this.dom.sliderKnotY) {
-        this.dom.sliderKnotY.addEventListener('input', (e) => {
-          this.state.normKnotY = parseFloat(e.target.value) / 100;
-          if (this.state.protractor.isSnapped) {
-            this.state.protractor.normY = this.state.normKnotY;
-          }
-          this.updateEquilibrium();
-          this.render();
-        });
-      }
 
       // Mystery Chips
       document.querySelectorAll('.mystery-chip').forEach(chip => {
@@ -448,14 +435,12 @@
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'none';
       } else if (scenarioId === 'sandbox') {
         if (this.dom.bannerTitle) this.dom.bannerTitle.textContent = '4. Custom Statics Sandbox';
-        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'Freely manipulate hanging mass, horizontal placement, and vertical drop to explore any 2D concurrent force setup.';
+        if (this.dom.bannerDesc) this.dom.bannerDesc.textContent = 'Freely drag the brass knot on the canvas to set cord lengths and angles, and adjust hanging mass to explore any 2D statics setup.';
         if (this.dom.mysteryBox) this.dom.mysteryBox.style.display = 'none';
         if (this.dom.massControlItem) this.dom.massControlItem.style.display = 'flex';
       }
 
       if (this.dom.sliderMass) this.dom.sliderMass.value = Math.round(this.state.massKg * 1000);
-      if (this.dom.sliderKnotX) this.dom.sliderKnotX.value = Math.round(this.state.normKnotX * 100);
-      if (this.dom.sliderKnotY) this.dom.sliderKnotY.value = Math.round(this.state.normKnotY * 100);
 
       this.state.protractor.normX = this.state.normKnotX;
       this.state.protractor.normY = this.state.normKnotY;
@@ -725,9 +710,6 @@
 
           this.state.normKnotX = newX / w;
           this.state.normKnotY = newY / h;
-
-          if (this.dom.sliderKnotX) this.dom.sliderKnotX.value = Math.round(this.state.normKnotX * 100);
-          if (this.dom.sliderKnotY) this.dom.sliderKnotY.value = Math.round(this.state.normKnotY * 100);
 
           if (this.state.protractor.isSnapped) {
             this.state.protractor.normX = this.state.normKnotX;
@@ -1164,6 +1146,17 @@
       ctx.beginPath();
       ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
       ctx.fill();
+
+      // Drag Hint Tooltip when hovering
+      if (this.state.isHoveringKnot && !this.state.dragTarget) {
+        ctx.fillStyle = 'rgba(18, 49, 64, 0.88)';
+        drawRoundedRect(ctx, p.x - 36, p.y - 32, 72, 18, 3, true, false);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 9px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('✥ Drag Knot', p.x, p.y - 23);
+      }
 
       ctx.restore();
     }

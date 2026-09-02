@@ -84,18 +84,22 @@
           </div>
         </div>
 
-        <!-- Knot Horizontal Position -->
+        <!-- Left Cord Length (L1) Readout -->
         <div class="sandbox-control-item">
-          <label>Knot Position (horizontal): <strong id="valKnotX" style="color: var(--accent-amber);">50%</strong></label>
-          <input type="range" class="range-slider" id="sliderKnotX" min="28" max="72" step="1" value="50">
-          <span style="font-size: 0.72rem; color: var(--muted);">Slide left/right to shift the knot</span>
+          <label>Left Cord Length (<span class="math-expr">L₁</span>): <strong id="valLen1" style="color: var(--primary-teal-dark);">-- cm</strong></label>
+          <div class="readout-meter">
+            <div class="readout-meter-fill teal" id="meterLen1" style="width: 50%;"></div>
+          </div>
+          <span style="font-size: 0.72rem; color: var(--muted);">Clamp 1 to knot distance &bull; Drag knot to adjust</span>
         </div>
 
-        <!-- Knot Vertical Drop -->
+        <!-- Right Cord Length (L2) Readout -->
         <div class="sandbox-control-item">
-          <label>Knot Drop (vertical): <strong id="valKnotY" style="color: var(--primary-teal);">58%</strong></label>
-          <input type="range" class="range-slider" id="sliderKnotY" min="38" max="76" step="1" value="58">
-          <span style="font-size: 0.72rem; color: var(--muted);">Lower drop changes cord angles</span>
+          <label>Right Cord Length (<span class="math-expr">L₂</span>): <strong id="valLen2" style="color: var(--accent-amber-dark);">-- cm</strong></label>
+          <div class="readout-meter">
+            <div class="readout-meter-fill amber" id="meterLen2" style="width: 50%;"></div>
+          </div>
+          <span style="font-size: 0.72rem; color: var(--muted);">Clamp 2 to knot distance &bull; Drag knot to adjust</span>
         </div>
       </div>
     </section>
