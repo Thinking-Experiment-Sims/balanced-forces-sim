@@ -13,27 +13,27 @@
 
   <div class="shell">
     <!-- Header Banner -->
-    <!-- Top App Bar: Brand, Title, Mode Switcher & Hub -->
-    <header class="app-header">
-      <div class="header-branding">
-        <a href="https://thinking-experiment-sims.github.io/interactive-physics/" class="brand-badge" style="text-decoration: none;" title="Go to Physics Simulations Hub">← The Thinking Experiment</a>
-        <div class="header-title-group">
-          <h1><span>⚖️</span> Balanced Forces: 2D Statics Lab</h1>
+    <!-- Header Banner (The Thinking Experiment Main Card) -->
+    <header class="hero">
+      <div class="hero-top">
+        <div>
+          <a href="https://thinking-experiment-sims.github.io/interactive-physics/" class="brand-badge" style="text-decoration: none;" title="The Thinking Experiment">← The Thinking Experiment</a>
+          <h1>Balanced Forces: Hanging Mass &amp; 2D Statics Lab</h1>
+          <p class="hero-subtitle">
+            Determine the value of the hanging mass by measuring cord tensions with spring force sensors and measuring suspension angles using the virtual protractor.
+          </p>
         </div>
-      </div>
-
-      <div class="header-actions">
-        <!-- Compact Mode Switcher Pill -->
-        <div class="mode-switcher-pill" id="modeSelectorCard" title="Toggle between Ideal Textbook Model and Real Laboratory Mode with spring stretch and scale uncertainty">
-          <label class="mode-toggle-label">
-            <input type="checkbox" id="chkRealLabMode">
-            <span class="mode-toggle-slider"></span>
-            <span class="mode-toggle-text">🔬 Real Lab Mode</span>
-          </label>
-          <span class="mode-status-badge" id="modeBadge">Ideal Scenario</span>
+        <div class="hero-meta-badges">
+          <!-- Simulation Mode Switcher Pill -->
+          <div class="mode-switcher-pill" id="modeSelectorCard" title="Toggle between Ideal Textbook Model and Real Laboratory Mode with spring stretch and scale uncertainty">
+            <label class="mode-toggle-label">
+              <input type="checkbox" id="chkRealLabMode">
+              <span class="mode-toggle-slider"></span>
+              <span class="mode-toggle-text">🔬 Real Lab Mode</span>
+            </label>
+            <span class="mode-status-badge" id="modeBadge">Ideal Scenario</span>
+          </div>
         </div>
-
-        <a href="https://thinking-experiment-sims.github.io/interactive-physics/" class="btn btn-sm btn-ghost" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700;">🏠 Hub</a>
       </div>
     </header>
 
