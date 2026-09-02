@@ -511,7 +511,8 @@ canvas {
   font-weight: 600;
   color: var(--ink);
   display: flex;
-  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.35rem;
 }
 
 .range-slider {

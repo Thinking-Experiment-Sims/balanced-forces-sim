@@ -74,7 +74,7 @@
       <div class="sandbox-controls-grid">
         <!-- Mass Control -->
         <div class="sandbox-control-item" id="massControlItem">
-          <label>Hanging Mass (<span class="math-expr">m</span>): <span id="valMass" style="color: var(--primary-teal-dark); font-weight: 700;">500 g</span></label>
+          <label>Hanging Mass: <strong id="valMass" style="color: var(--primary-teal-dark);">500 g</strong></label>
           <input type="range" class="range-slider" id="sliderMass" min="50" max="1000" step="25" value="500">
           <div class="mass-preset-bar">
             <button class="preset-chip" data-mass="100">100g</button>
@@ -86,16 +86,16 @@
 
         <!-- Knot Horizontal Position -->
         <div class="sandbox-control-item">
-          <label>Knot Horizontal Position: <span id="valKnotX" style="color: var(--accent-amber); font-weight: 700;">Center (50%)</span></label>
+          <label>Knot Position (horizontal): <strong id="valKnotX" style="color: var(--accent-amber);">50%</strong></label>
           <input type="range" class="range-slider" id="sliderKnotX" min="28" max="72" step="1" value="50">
-          <span style="font-size: 0.72rem; color: var(--muted);">Slide left/right to change knot placement</span>
+          <span style="font-size: 0.72rem; color: var(--muted);">Slide left/right to shift the knot</span>
         </div>
 
         <!-- Knot Vertical Drop -->
         <div class="sandbox-control-item">
-          <label>Knot Vertical Drop: <span id="valKnotY" style="color: var(--primary-teal); font-weight: 700;">58%</span></label>
+          <label>Knot Drop (vertical): <strong id="valKnotY" style="color: var(--primary-teal);">58%</strong></label>
           <input type="range" class="range-slider" id="sliderKnotY" min="38" max="76" step="1" value="58">
-          <span style="font-size: 0.72rem; color: var(--muted);">Lower drop changes cord angles and tension</span>
+          <span style="font-size: 0.72rem; color: var(--muted);">Lower drop changes cord angles</span>
         </div>
       </div>
     </section>

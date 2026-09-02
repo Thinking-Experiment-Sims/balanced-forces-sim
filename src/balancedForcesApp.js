@@ -1090,6 +1090,59 @@
       ctx.lineTo(p.x, p.y + 35);
       ctx.stroke();
 
+      // Cord Labels: T₁ (left) and T₂ (right) at midpoint of each cord
+      ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.textBaseline = 'middle';
+
+      // T₁ label (left cord midpoint, offset above the cord)
+      const mid1X = (s1.x + p.x) / 2;
+      const mid1Y = (s1.y + p.y) / 2;
+      const ang1 = Math.atan2(p.y - s1.y, p.x - s1.x);
+      const off1X = mid1X + 14 * Math.cos(ang1 - Math.PI / 2);
+      const off1Y = mid1Y + 14 * Math.sin(ang1 - Math.PI / 2);
+
+      ctx.fillStyle = '#ffffff';
+      drawRoundedRect(ctx, off1X - 16, off1Y - 9, 32, 18, 4, true, true);
+      ctx.strokeStyle = '#0f7e9b';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.fillStyle = '#0f7e9b';
+      ctx.textAlign = 'center';
+      ctx.fillText('T₁', off1X, off1Y);
+
+      // T₂ label (right cord midpoint, offset above the cord)
+      const mid2X = (s2.x + p.x) / 2;
+      const mid2Y = (s2.y + p.y) / 2;
+      const ang2 = Math.atan2(p.y - s2.y, p.x - s2.x);
+      const off2X = mid2X + 14 * Math.cos(ang2 + Math.PI / 2);
+      const off2Y = mid2Y + 14 * Math.sin(ang2 + Math.PI / 2);
+
+      ctx.fillStyle = '#ffffff';
+      drawRoundedRect(ctx, off2X - 16, off2Y - 9, 32, 18, 4, true, true);
+      ctx.strokeStyle = '#d67b19';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.fillStyle = '#d67b19';
+      ctx.textAlign = 'center';
+      ctx.fillText('T₂', off2X, off2Y);
+
+      // Fg label on vertical cord
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Fg', p.x + 8, p.y + 20);
+
+      // θ₁ label near left angle
+      ctx.fillStyle = '#0f7e9b';
+      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('θ₁', p.x - 46, p.y - 6);
+
+      // θ₂ label near right angle
+      ctx.fillStyle = '#d67b19';
+      ctx.textAlign = 'left';
+      ctx.fillText('θ₂', p.x + 46, p.y - 6);
+
       // Knot Ring Glow
       if (this.state.isHoveringKnot || this.state.dragTarget === 'knot') {
         ctx.fillStyle = 'rgba(214, 123, 25, 0.35)';
