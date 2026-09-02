@@ -153,6 +153,7 @@
         // Toggles
         showLevelLines: true,
         showSpringDials: true,
+        showZoomScales: true,
 
         // Dragging
         dragTarget: null,
@@ -237,8 +238,8 @@
       const w = canvas ? canvas.width / dpr : 600;
       const h = canvas ? canvas.height / dpr : 380;
 
-      const s1 = { x: w * 0.18, y: h * 0.24 };
-      const s2 = { x: w * 0.82, y: h * 0.24 };
+      const s1 = { x: w * 0.20, y: h * 0.24 };
+      const s2 = { x: w * 0.80, y: h * 0.24 };
       const effY = this.getEffectiveKnotY();
       const p = { x: w * this.state.normKnotX, y: h * effY };
 
@@ -444,6 +445,14 @@
       if (chkDials) {
         chkDials.addEventListener('change', (e) => {
           this.state.showSpringDials = e.target.checked;
+          this.render();
+        });
+      }
+
+      const chkZoom = document.getElementById('chkZoomScales');
+      if (chkZoom) {
+        chkZoom.addEventListener('change', (e) => {
+          this.state.showZoomScales = e.target.checked;
           this.render();
         });
       }
@@ -851,8 +860,8 @@
       ctx.fillText(`Left Force Sensor (T₁) = ${eq.t1.toFixed(2)} N   |   Right Force Sensor (T₂) = ${eq.t2.toFixed(2)} N   |   Scenario: ${this.state.activeScenario.toUpperCase()}`, 20, 48);
 
       // Physical Coordinates scaled to export canvas
-      const s1 = { x: w * 0.18, y: h * 0.28 };
-      const s2 = { x: w * 0.82, y: h * 0.28 };
+      const s1 = { x: w * 0.20, y: h * 0.28 };
+      const s2 = { x: w * 0.80, y: h * 0.28 };
       const p = { x: w * this.state.normKnotX, y: h * this.state.normKnotY };
 
       // Tabletop Base
@@ -1152,6 +1161,12 @@
       ctx.fillStyle = '#d67b19';
       ctx.fillText('θ₂', p.x + 48, p.y - 12);
 
+      // Vertical Zoomed Scales on Printable Export
+      if (this.state.showZoomScales) {
+        this.drawVerticalZoomScale(ctx, 14, 75, 78, 290, eq.t1, 'T₁ Scale', '#0f7e9b', s1);
+        this.drawVerticalZoomScale(ctx, w - 92, 75, 78, 290, eq.t2, 'T₂ Scale', '#d67b19', s2);
+      }
+
       ctx.restore();
     }
 
@@ -1344,6 +1359,12 @@
         const rx = w * this.state.ruler.normX;
         const ry = h * this.state.ruler.normY;
         this.drawRuler(ctx, rx, ry);
+      }
+
+      // 9. Vertical Zoomed Scales (Left & Right)
+      if (this.state.showZoomScales && this.equilibrium) {
+        this.drawVerticalZoomScale(ctx, 12, 16, 72, 262, this.equilibrium.t1, 'T₁ Scale', '#0f7e9b', s1);
+        this.drawVerticalZoomScale(ctx, w - 84, 16, 72, 262, this.equilibrium.t2, 'T₂ Scale', '#d67b19', s2);
       }
 
       ctx.restore();
@@ -1563,12 +1584,12 @@
         ctx.arc(8 + scaleLen + 12, 4, 4, -Math.PI / 2, Math.PI / 2);
         ctx.stroke();
 
-        // Digital Sensor Force Badge
-        if (this.state.showSpringDials) {
+        // Digital Sensor Force Badge (shown in Ideal Mode, or in Real Lab Mode if vertical zoom is disabled)
+        if (this.state.showSpringDials && (!this.state.isRealLabMode || !this.state.showZoomScales)) {
           ctx.save();
           ctx.rotate(-angleRad);
           ctx.fillStyle = '#ffffff';
-          const badgeW = this.state.isRealLabMode ? 74 : 54;
+          const badgeW = 56;
           drawRoundedRect(ctx, -badgeW / 2, isLeft ? -42 : 24, badgeW, 22, 4, true, true);
           ctx.strokeStyle = isLeft ? '#0f7e9b' : '#d67b19';
           ctx.lineWidth = 1.5;
@@ -1579,7 +1600,7 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           if (this.state.isRealLabMode) {
-            ctx.fillText('Read Scale 👁️', 0, isLeft ? -31 : 35);
+            ctx.fillText('Read Scale', 0, isLeft ? -31 : 35);
           } else {
             ctx.fillText(`${tension.toFixed(2)} N`, 0, isLeft ? -31 : 35);
           }
@@ -1591,6 +1612,152 @@
 
       drawScale(s1, eq.t1, p, true);
       drawScale(s2, eq.t2, p, false);
+    }
+
+    drawVerticalZoomScale(ctx, x, y, width, height, tension, title, themeColor, anchorPoint) {
+      ctx.save();
+
+      // Dashed Callout Line connecting tilted spring scale anchor to vertical zoom card
+      if (anchorPoint) {
+        ctx.strokeStyle = themeColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(anchorPoint.x, anchorPoint.y);
+        ctx.lineTo(x + width / 2, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Card Container
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      drawRoundedRect(ctx, x, y, width, height, 7, true, true);
+      ctx.strokeStyle = themeColor;
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      // Card Header Banner
+      ctx.fillStyle = themeColor;
+      drawRoundedRect(ctx, x + 4, y + 4, width - 8, 18, 4, true, false);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(title, x + width / 2, y + 13);
+
+      // Subtitle
+      ctx.fillStyle = '#475569';
+      ctx.font = '7px Inter, sans-serif';
+      ctx.fillText('0–10 N (0.2N ticks)', x + width / 2, y + 29);
+
+      // Top Ring / Clamp Cap
+      const topRingY = y + 36;
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(x + 22, topRingY, 4, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Barrel Geometry
+      const barrelX = x + 8;
+      const barrelY = y + 42;
+      const barrelW = 26;
+      const barrelH = 188; // ~18.8 px per Newton!
+      const usableH = barrelH - 8;
+
+      // Barrel Background
+      ctx.fillStyle = '#f8fafc';
+      drawRoundedRect(ctx, barrelX, barrelY, barrelW, barrelH, 3, true, true);
+      ctx.strokeStyle = themeColor;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Spring Deflection
+      const ext = Math.max(0, Math.min(usableH, (tension / 10) * usableH));
+      const indY = barrelY + 4 + ext;
+
+      // Helical Spring Coil
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(barrelX + barrelW / 2, barrelY + 2);
+      const coils = 12;
+      for (let i = 0; i <= coils; i++) {
+        const cy = barrelY + 2 + (i / coils) * ext;
+        const cx = barrelX + barrelW / 2 + (i % 2 === 0 ? -4 : 4);
+        ctx.lineTo(cx, cy);
+      }
+      ctx.lineTo(barrelX + barrelW / 2, indY);
+      ctx.stroke();
+
+      // Hook Rod extending from indicator to bottom
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(barrelX + barrelW / 2, indY);
+      ctx.lineTo(barrelX + barrelW / 2, barrelY + barrelH + 6);
+      ctx.stroke();
+
+      // Graduated Newton Ticks (Completely Vertical & Upright)
+      for (let n = 0; n <= 10; n += 0.2) {
+        const val = Math.round(n * 10) / 10;
+        const tickY = barrelY + 4 + (val / 10) * usableH;
+        const isWhole = Math.abs(val - Math.round(val)) < 0.05;
+        const isHalf = Math.abs(val - (Math.floor(val) + 0.5)) < 0.05;
+
+        let tickLen = 3;
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 0.7;
+
+        if (isWhole) {
+          tickLen = 8;
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 1.4;
+        } else if (isHalf) {
+          tickLen = 5;
+          ctx.strokeStyle = '#334155';
+          ctx.lineWidth = 0.9;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(barrelX + barrelW - 1, tickY);
+        ctx.lineTo(barrelX + barrelW - 1 - tickLen, tickY);
+        ctx.stroke();
+
+        // Numerals for whole Newtons (0, 1, 2, ..., 10)
+        if (isWhole) {
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 8px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(Math.round(val).toString(), barrelX + barrelW + 3, tickY);
+        }
+      }
+
+      // Red Indicator Bar across the barrel
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(barrelX + 1, indY - 1.5, barrelW - 2, 3);
+
+      // Sharp Red Indicator Pointer on the left
+      ctx.beginPath();
+      ctx.moveTo(barrelX, indY);
+      ctx.lineTo(barrelX - 4, indY - 3);
+      ctx.lineTo(barrelX - 4, indY + 3);
+      ctx.closePath();
+      ctx.fill();
+
+      // Footer Readout
+      ctx.fillStyle = this.state.isRealLabMode ? '#b06210' : themeColor;
+      ctx.font = 'bold 8.5px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      if (this.state.isRealLabMode) {
+        ctx.fillText('Read Red Line', x + width / 2, y + height - 10);
+      } else {
+        ctx.fillText(`${tension.toFixed(2)} N`, x + width / 2, y + height - 10);
+      }
+
+      ctx.restore();
     }
 
     drawCordsAndKnot(ctx, s1, s2, p) {
